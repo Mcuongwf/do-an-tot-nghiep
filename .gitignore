@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Logs
 logs
 *.log
@@ -137,3 +138,23 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+=======
+# Thư mục thư viện (Nặng nhất, tuyệt đối không up)
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+
+# Thư mục build
+dist/
+build/
+
+# File cấu hình bảo mật (Chứa mật khẩu Database)
+.env
+.env.local
+
+# File rác của VS Code và Hệ điều hành
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+>>>>>>> 4075ee4 (Tien do 4/6)
