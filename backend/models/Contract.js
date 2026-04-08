@@ -15,6 +15,7 @@ const Contract = sequelize.define("Contract", {
   waterPrice: { type: DataTypes.BIGINT, defaultValue: 15000 },
   internetPrice: { type: DataTypes.BIGINT, defaultValue: 0 },
   note: DataTypes.TEXT,
+  terminatedAt: { type: DataTypes.DATEONLY, allowNull: true },
 }, { tableName: "contracts", underscored: true, timestamps: false });
 
 module.exports = Contract;

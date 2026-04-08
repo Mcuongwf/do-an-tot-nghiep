@@ -12,7 +12,7 @@ const DISTRICTS_BY_PROVINCE = {
   "Bắc Ninh": ["Thành phố Bắc Ninh","Từ Sơn","Tiên Du","Yên Phong","Quế Võ","Lương Tài","Gia Bình"],
 };
 const TYPES = ["Phòng trọ", "Studio", "Mini Apartment", "Căn hộ", "KTX"];
-
+//hàm khởi tạo 
 export default function AddRoom() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -40,12 +40,12 @@ export default function AddRoom() {
     amenities: [],
     images: [],
   });
-
+//hàm cập nhật dữ liệu form
   const set = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setErrors(prev => ({ ...prev, [field]: "" }));
   };
-
+//hàm upload hình ảnh
   const handleImageUpload = async (files) => {
     if (!files.length) return;
     setUploadingImages(true);
@@ -62,11 +62,11 @@ export default function AddRoom() {
       setUploadingImages(false);
     }
   };
-
+//hàm xoá hình ảnh
   const removeImage = (index) => {
     set("images", form.images.filter((_, i) => i !== index));
   };
-
+//hàm bỏ/ chọn các tiện ích
   const toggleAmenity = (a) => {
     setForm(prev => ({
       ...prev,
@@ -75,7 +75,7 @@ export default function AddRoom() {
         : [...prev.amenities, a]
     }));
   };
-
+//hàm validate
   const validate = () => {
     const e = {};
     if (!form.title) e.title = "Vui lòng nhập tên phòng!";
@@ -85,7 +85,7 @@ export default function AddRoom() {
     if (!form.description) e.description = "Vui lòng nhập mô tả!";
     return e;
   };
-
+//hàm điều hướng và kiểm tra dữ liệu
   const handleNext = () => {
     if (step === 1) {
       const e = {};
@@ -103,7 +103,7 @@ export default function AddRoom() {
     }
     setStep(s => s + 1);
   };
-
+//hàm gửi dữ liệu đăng phòng
   const handleSubmit = async () => {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }

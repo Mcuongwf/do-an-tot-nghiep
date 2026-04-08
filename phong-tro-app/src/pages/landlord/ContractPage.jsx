@@ -6,13 +6,13 @@ import LandlordSidebar from "../../components/LandlordSidebar";
 import { SkeletonRow, Pagination } from "../../components/Skeleton";
 
 const PAGE_SIZE = 8;
-
+//hàm khai báo trạng thái
 const STATUS_STYLE = {
   "active":     { bg: "rgba(46,196,182,0.1)",  color: "#2ec4b6",  label: "Đang hiệu lực" },
   "expired":    { bg: "rgba(247,147,30,0.1)",  color: "#f7931e",  label: "Hết hạn" },
   "terminated": { bg: "rgba(255,68,68,0.1)",   color: "#ff4444",  label: "Đã thanh lý" },
 };
-
+//khởi tạo của trang quản lý hợp đồng
 export default function ContractPage() {
   const navigate = useNavigate();
   const { toasts, toast } = useToast();
@@ -44,7 +44,7 @@ export default function ContractPage() {
     fetchAll();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
+//hàm fetchALL data lấy dữ liệu
   const fetchAll = async () => {
     setLoading(true);
     try {
@@ -68,7 +68,7 @@ export default function ContractPage() {
       setLoading(false);
     }
   };
-
+//hàm tạo hợp đồng mới
   const handleAdd = async () => {
     if (!form.room) { toast("Vui lòng chọn phòng!", "error"); return; }
     if (!form.tenant) { toast("Vui lòng chọn khách thuê!", "error"); return; }
@@ -92,7 +92,7 @@ export default function ContractPage() {
       toast("Lỗi: " + (err.response?.data?.message || err.message), "error");
     }
   };
-
+//hàm cbi dữ liệu để chỉnh sửa
   const openEdit = (c) => {
     setSelected(c);
     setEditForm({
@@ -107,7 +107,7 @@ export default function ContractPage() {
     });
     setShowEditModal(true);
   };
-
+//hàm chỉnh sủa/ cập nhật hợp đồng
   const handleEdit = async () => {
     try {
       await axios.put(`${process.env.REACT_APP_API_URL}/api/contracts/${selected.id}`, {
@@ -125,7 +125,7 @@ export default function ContractPage() {
       toast("Lỗi cập nhật hợp đồng!", "error");
     }
   };
-
+//hàm thanh lý hợp đồng
   const handleTerminate = async (id) => {
     if (!window.confirm("Xác nhận thanh lý hợp đồng này?")) return;
     try {
@@ -154,7 +154,7 @@ export default function ContractPage() {
 
   const formatPrice = (p) => new Intl.NumberFormat("vi-VN").format(p || 0);
   const formatDate = (d) => d ? new Date(d).toLocaleDateString("vi-VN") : "—";
-
+//hàm in/xuất file hợp đồng
   const handlePrintInvoice = (c) => {
     const today = new Date();
     const dd = String(today.getDate()).padStart(2, '0');

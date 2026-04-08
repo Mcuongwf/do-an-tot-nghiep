@@ -9,7 +9,7 @@ const MENU = [
   { key: "users", label: "Quản lý tài khoản", icon: "👥" },
   { key: "rooms", label: "Duyệt bài đăng", icon: "🏠" },
 ];
-
+//khai báo trạng thái và dữ liệu đầu vào
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [active, setActive] = useState("dashboard");
@@ -29,7 +29,7 @@ export default function AdminDashboard() {
     }
     fetchData();
   }, []);
-
+//hàm fetch data để lấy dữ  liệu ng dùng và phòng trọ
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -46,7 +46,7 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
-
+//hàm xử lý logic khoá/mở ng dùng
   const handleLockUser = async (id, currentStatus) => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
@@ -57,7 +57,7 @@ export default function AdminDashboard() {
       toast("Lỗi: " + err.message, "error");
     }
   };
-
+//hàm xử lý duyệt bài đăng trọ
   const handleApproveRoom = async (id) => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
@@ -67,7 +67,7 @@ export default function AdminDashboard() {
       toast("Lỗi: " + err.message, "error");
     }
   };
-
+//hàm xử lý từ chối bài đăng
   const handleRejectRoom = async (id) => {
     try {
       const headers = { Authorization: `Bearer ${token}` };

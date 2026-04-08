@@ -225,28 +225,6 @@ export default function Messages() {
               </div>
             </div>
 
-            {/* Search */}
-            <div style={{ position: "relative", marginBottom: 14 }}>
-              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#aaa" }}>🔍</span>
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="Nhập 3 ký tự để bắt đầu tìm kiếm"
-                style={{ width: "100%", padding: "10px 14px 10px 36px", borderRadius: 10, border: "none", background: "#f5f5f5", fontSize: 13, color: "#333" }}
-              />
-            </div>
-
-            {/* Filter tabs */}
-            <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-              {[{ key: "all", label: "Tất cả" }, { key: "unread", label: "Chưa đọc" }, { key: "spam", label: "Tin rác / Bỏ qua" }].map(tab => (
-                <button key={tab.key} onClick={() => setFilter(tab.key)} style={{
-                  padding: "6px 12px", borderRadius: 20, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer",
-                  background: filter === tab.key ? "#1a1a1a" : "#f5f5f5",
-                  color: filter === tab.key ? "#fff" : "#555",
-                  transition: "all 0.15s",
-                }}>{tab.label}</button>
-              ))}
-            </div>
           </div>
 
           {/* Conversation list */}

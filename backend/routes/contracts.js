@@ -54,7 +54,11 @@ router.put("/:id", protect, landlordOnly, async (req, res) => {
   try {
     const contract = await Contract.findByPk(req.params.id);
     if (!contract) return res.status(404).json({ message: "Không tìm thấy" });
-    await contract.update(req.body);
+    const updateData = { ...req.body };
+    if (req.body.status === "terminated" && !contract.terminatedAt) {
+      updateData.terminatedAt = new Date().toISOString().slice(0, 10);
+    }
+    await contract.update(updateData);
     res.json({ message: "Cập nhật thành công!", contract });
   } catch (error) {
     res.status(500).json({ message: "Lỗi server" });

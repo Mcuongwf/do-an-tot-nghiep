@@ -21,7 +21,7 @@ function formatMoney(n) {
 }
 
 const MONTHS = ["T1","T2","T3","T4","T5","T6","T7","T8","T9","T10","T11","T12"];
-
+//hàm khởi tạo trang dashboard
 export default function Dashboard() {
   const [activeMenu, setActiveMenu] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -49,7 +49,7 @@ export default function Dashboard() {
   const AMENITIES_LIST = ["WiFi","Điều hòa","WC riêng","Bếp","Máy giặt","Tủ lạnh","Bảo vệ 24/7","Chỗ để xe","Thang máy","Hồ bơi","Ban công","Canteen"];
   const TYPES = ["Phòng trọ","Studio","Mini Apartment","Căn hộ","KTX"];
   const DISTRICTS = ["Quận 1","Quận 2","Quận 3","Quận 4","Quận 5","Quận 6","Quận 7","Quận 8","Quận 9","Quận 10","Quận 11","Quận 12","Bình Thạnh","Gò Vấp","Tân Bình","Tân Phú","Thủ Đức","Bình Chánh","Hóc Môn","Nhà Bè","Ba Đình","Hoàn Kiếm","Đống Đa","Hai Bà Trưng","Hoàng Mai","Thanh Xuân","Cầu Giấy","Nam Từ Liêm","Bắc Từ Liêm","Tây Hồ","Long Biên","Hà Đông","Hải Châu","Thanh Khê","Sơn Trà","Ngũ Hành Sơn","Liên Chiểu","Cẩm Lệ"];
-
+//hàm cbi dữ liệu để chỉnh sửa bài đăng phòng
   const openEdit = (room) => {
     setEditForm({
       title: room.title || "",
@@ -66,7 +66,7 @@ export default function Dashboard() {
     });
     setEditMode(true);
   };
-
+//hàm chỉnh sửa bài đăng phòng
   const toggleAmenityEdit = (a) => {
     setEditForm(prev => ({
       ...prev,
@@ -75,7 +75,7 @@ export default function Dashboard() {
         : [...prev.amenities, a]
     }));
   };
-
+//hàm lưu thay đổi bài đăng phòng
   const handleSaveEdit = async () => {
     setSavingEdit(true);
     try {
@@ -114,8 +114,11 @@ export default function Dashboard() {
       .filter(c => {
         if (!c.startDate) return false;
         const start = new Date(c.startDate);
-        const end = c.endDate ? new Date(c.endDate) : new Date(9999, 11, 31);
-        return start <= monthEnd && end >= monthStart;
+        // Hợp đồng thanh lý: dùng terminatedAt làm ngày kết thúc thực tế
+        const effectiveEnd = (c.status === "terminated" && c.terminatedAt)
+          ? new Date(c.terminatedAt)
+          : c.endDate ? new Date(c.endDate) : new Date(9999, 11, 31);
+        return start <= monthEnd && effectiveEnd >= monthStart;
       })
       .reduce((s, c) => s + (Number(c.price) || 0), 0);
     return { month, revenue: monthRevenue };
@@ -129,7 +132,7 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
+//hàm lấy ra danh sách các thông báo
   const fetchNotifications = async () => {
     try {
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/notifications`, {
@@ -149,7 +152,7 @@ export default function Dashboard() {
       setUnreadCount(0);
     } catch {}
   };
-
+//hàm tài dữ liệu tổng hợp của chủ nhà
   const fetchAll = async () => {
     setLoading(true);
     try {
@@ -169,7 +172,7 @@ export default function Dashboard() {
       setLoading(false);
     }
   };
-
+//hàm thay đổi trạng thái
   const handleUpdateStatus = async (id, newStatus) => {
     try {
       await axios.put(
@@ -183,7 +186,7 @@ export default function Dashboard() {
       toast("Lỗi cập nhật trạng thái!", "error");
     }
   };
-
+//hàm xoá bài đăng phòng
   const handleDeleteRoom = async (id) => {
     if (!window.confirm("Xác nhận xóa phòng này?")) return;
     try {
@@ -193,7 +196,7 @@ export default function Dashboard() {
       toast("Lỗi xóa phòng!", "error");
     }
   };
-
+//hàm cập nhật lịch hẹn
   const handleUpdateBooking = async (id, status) => {
     try {
       await axios.put(`${process.env.REACT_APP_API_URL}/api/bookings/${id}`, { status }, { headers: { Authorization: `Bearer ${token}` } });
