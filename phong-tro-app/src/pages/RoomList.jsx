@@ -1,16 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/axiosInstance";
+import { useAuth } from "../context/AuthContext";
 import { getImgUrl } from "../utils/getImgUrl";
 
-const PROVINCES = ["Tất cả", "TP. Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Bắc Ninh"];
-const DISTRICTS_BY_PROVINCE = {
-  "TP. Hồ Chí Minh": ["Quận 1","Quận 2","Quận 3","Quận 4","Quận 5","Quận 6","Quận 7","Quận 8","Quận 9","Quận 10","Quận 11","Quận 12","Bình Thạnh","Gò Vấp","Tân Bình","Tân Phú","Thủ Đức","Bình Chánh","Hóc Môn","Nhà Bè"],
-  "Hà Nội": ["Ba Đình","Hoàn Kiếm","Đống Đa","Hai Bà Trưng","Hoàng Mai","Thanh Xuân","Cầu Giấy","Nam Từ Liêm","Bắc Từ Liêm","Tây Hồ","Long Biên","Hà Đông"],
-  "Đà Nẵng": ["Hải Châu","Thanh Khê","Sơn Trà","Ngũ Hành Sơn","Liên Chiểu","Cẩm Lệ","Hòa Vang"],
-  "Bắc Ninh": ["Thành phố Bắc Ninh","Từ Sơn","Tiên Du","Yên Phong","Quế Võ","Lương Tài","Gia Bình"],
-};
-const TYPES = ["Tất cả", "Phòng trọ", "Studio", "Mini Apartment", "Căn hộ", "KTX"];
+import { PROVINCES_FILTER, DISTRICTS_BY_PROVINCE, ROOM_TYPES_FILTER } from "../constants";
+const PROVINCES = PROVINCES_FILTER;
+const TYPES = ROOM_TYPES_FILTER;
 const SORT_OPTIONS = [
   { label: "Mới nhất", value: "newest" },
   { label: "Giá thấp → cao", value: "price_asc" },
@@ -44,8 +40,8 @@ export default function RoomList() {
   }, []);
 
   useEffect(() => {
-    fetchRooms(1);
     setPage(1);
+    fetchRooms(1);
   }, [search, province, district, type, minPrice, maxPrice, sort]);
 
   const fetchRooms = async (p = page) => {
@@ -56,13 +52,15 @@ export default function RoomList() {
       if (district !== "Tất cả") {
         params.append("district", district);
       } else if (province !== "Tất cả") {
-        const districts = DISTRICTS_BY_PROVINCE[province] || [];
-        params.append("districts", districts.join(","));
+        params.append("province", province);
+        const districtList = DISTRICTS_BY_PROVINCE[province] || [];
+        if (districtList.length) params.append("districts", districtList.join(","));
       }
       if (type !== "Tất cả") params.append("type", type);
       if (minPrice) params.append("minPrice", minPrice);
       if (maxPrice) params.append("maxPrice", maxPrice);
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/rooms?${params}`);
+      if (sort !== "newest") params.append("sort", sort);
+      const res = await api.get(`/api/rooms?${params}`);
       if (res.data.rooms) {
         setRooms(res.data.rooms);
         setTotalPages(res.data.totalPages || 1);
@@ -77,9 +75,7 @@ export default function RoomList() {
 
   const fetchWishlist = async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/wishlist`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get(`/api/wishlist`);
       setWishlist(res.data.wishlist.map(r => r.id || r));
     } catch (err) {}
   };
@@ -88,20 +84,15 @@ export default function RoomList() {
     if (!user || !token) return;
     setWishlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
     try {
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/wishlist/toggle`,
-        { roomId: id },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const res = await api.post(
+        `/api/wishlist/toggle`,
+        { roomId: id }
       );
       setWishlist(res.data.wishlist.map(r => r.id || r));
     } catch (err) {}
   };
 
-  const filtered = sort === "newest" ? rooms : [...rooms].sort((a, b) => {
-    if (sort === "price_asc") return a.price - b.price;
-    if (sort === "price_desc") return b.price - a.price;
-    return 0;
-  });
+  const filtered = rooms;
 
   const formatPrice = (p) => new Intl.NumberFormat("vi-VN").format(p) + "đ/tháng";
 
@@ -119,7 +110,7 @@ export default function RoomList() {
         boxShadow: "0 2px 20px rgba(0,0,0,0.06)"
       }}>
         <div onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #ff6b35, #f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🏠</div>
+          <img src="/house-icon.png" alt="TrọTốt" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "contain" }} />
           <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 20, color: "#1a1a1a" }}>TrọTốt</span>
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -259,7 +250,7 @@ export default function RoomList() {
                     display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden"
                   }}>
                     {room.images && room.images.length > 0
-                      ? <img src={getImgUrl(room.images[0])} alt={room.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ? <img loading="lazy" src={getImgUrl(room.images[0])} alt={room.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       : <span style={{ fontSize: 44 }}>🏠</span>
                     }
                     <span style={{
@@ -280,7 +271,7 @@ export default function RoomList() {
                   {/* Info */}
                   <div style={{ padding: 16, flex: 1 }}>
                     <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 800, color: "#1a1a1a", lineHeight: 1.4 }}>{room.title}</h3>
-                    <p style={{ margin: "0 0 10px", color: "#888", fontSize: 12 }}>📍 {room.address}</p>
+                    <p style={{ margin: "0 0 10px", color: "#888", fontSize: 12 }}><img src={process.env.PUBLIC_URL + "/location-icon.png"} alt="location" style={{ width: 14, height: 14, objectFit: "contain", verticalAlign: "middle", marginRight: 3 }} />{room.address}</p>
                     <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
                       {[room.type, `${room.area}m²`, `⭐ ${room.rating}`].map((tag, i) => (
                         <span key={i} style={{ background: "#f8f7f4", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, color: "#555" }}>{tag}</span>

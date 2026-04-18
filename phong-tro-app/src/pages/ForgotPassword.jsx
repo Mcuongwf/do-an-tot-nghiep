@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/axiosInstance";
 export default function ForgotPassword() {
   const navigate = useNavigate();
   const [step, setStep] = useState("email"); // email → otp → newpassword → success
@@ -19,7 +19,7 @@ export default function ForgotPassword() {
     setLoading(true);
     setError("");
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/send-otp`, { email });
+      await api.post('/api/auth/send-otp', { email });
       setStep("otp");
     } catch (err) {
       setError(err.response?.data?.message || "Lỗi gửi mã OTP!");
@@ -35,7 +35,7 @@ export default function ForgotPassword() {
     setLoading(true);
     setError("");
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/verify-otp`, { email, otp: otpValue });
+      await api.post('/api/auth/verify-otp', { email, otp: otpValue });
       setStep("newpassword");
     } catch (err) {
       setError(err.response?.data?.message || "Mã OTP không đúng!");
@@ -52,7 +52,7 @@ export default function ForgotPassword() {
     setLoading(true);
     setError("");
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/reset-password`, {
+      await api.post('/api/auth/reset-password', {
         email,
         otp: otp.join(""),
         newPassword,
@@ -101,11 +101,7 @@ export default function ForgotPassword() {
       <div style={{ width: "100%", maxWidth: 440 }}>
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div onClick={() => navigate("/")} style={{
-            width: 56, height: 56, borderRadius: 16, cursor: "pointer",
-            background: "linear-gradient(135deg, #ff6b35, #f7931e)",
-            display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: 26
-          }}>🏠</div>
+          <img onClick={() => navigate("/")} src="/house-icon.png" alt="TrọTốt" style={{ width: 56, height: 56, borderRadius: 16, objectFit: "contain", cursor: "pointer" }} />
           <div style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 24, color: "#1a1a1a", marginTop: 10 }}>TrọTốt</div>
         </div>
 
@@ -178,7 +174,7 @@ export default function ForgotPassword() {
               </div>
 
               <p style={{ textAlign: "center", color: "#888", fontSize: 13, marginBottom: 20 }}>
-                ⏰ Mã có hiệu lực trong <strong>5 phút</strong>
+                 Mã có hiệu lực trong <strong>5 phút</strong>
               </p>
 
               {error && <div style={{ color: "#ff4444", fontSize: 13, marginBottom: 16, fontWeight: 600, textAlign: "center" }}>⚠️ {error}</div>}
@@ -188,7 +184,7 @@ export default function ForgotPassword() {
                 background: loading ? "#ccc" : "linear-gradient(135deg, #ff6b35, #f7931e)",
                 color: "#fff", fontWeight: 800, fontSize: 15, cursor: loading ? "not-allowed" : "pointer",
                 boxShadow: "0 4px 16px rgba(255,107,53,0.3)"
-              }}>{loading ? "⏳ Đang xác nhận..." : "✅ Xác nhận"}</button>
+              }}>{loading ? " Đang xác nhận..." : "Xác nhận"}</button>
 
               <div style={{ textAlign: "center", marginTop: 16 }}>
                 <span onClick={() => { setStep("email"); setOtp(["","","","","",""]); setError(""); }}
@@ -235,7 +231,7 @@ export default function ForgotPassword() {
                 color: "#fff", fontWeight: 800, fontSize: 15, cursor: loading ? "not-allowed" : "pointer",
                 boxShadow: "0 4px 16px rgba(255,107,53,0.3)"
               }}>
-                {loading ? "⏳ Đang lưu..." : "🔑 Đặt lại mật khẩu"}
+                {loading ? " Đang lưu..." : " Đặt lại mật khẩu"}
               </button>
             </>
           )}
@@ -253,7 +249,7 @@ export default function ForgotPassword() {
                 background: "linear-gradient(135deg, #ff6b35, #f7931e)",
                 color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer",
                 boxShadow: "0 4px 16px rgba(255,107,53,0.3)"
-              }}>🚀 Đăng nhập ngay</button>
+              }}> Đăng nhập ngay</button>
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/axiosInstance";
+import { useAuth } from "../context/AuthContext";
 import { getImgUrl } from "../utils/getImgUrl";
 
 const STATUS_MAP = {
@@ -11,21 +12,18 @@ const STATUS_MAP = {
 
 export default function MyBookings() {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const { user } = useAuth();
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
 
   useEffect(() => {
-    if (!token) { navigate("/login"); return; }
-    axios.get(`${process.env.REACT_APP_API_URL}/api/bookings`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(res => {
+    if (!user) { navigate("/login"); return; }
+    api.get('/api/bookings').then(res => {
       setBookings(Array.isArray(res.data) ? res.data : []);
     }).catch(() => {}).finally(() => setLoading(false));
-  }, [token, navigate]);
+  }, [user, navigate]);
 
   const filtered = filter === "all" ? bookings : bookings.filter(b => b.status === filter);
 
@@ -42,7 +40,7 @@ export default function MyBookings() {
         padding: "0 40px", height: 64, boxShadow: "0 2px 20px rgba(0,0,0,0.06)"
       }}>
         <div onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#ff6b35,#f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🏠</div>
+          <img src="/house-icon.png" alt="TrọTốt" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "contain" }} />
           <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 20, color: "#1a1a1a" }}>TrọTốt</span>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -91,7 +89,7 @@ export default function MyBookings() {
                   {/* Ảnh phòng */}
                   <div style={{ width: 80, height: 80, borderRadius: 12, overflow: "hidden", flexShrink: 0, background: "linear-gradient(135deg,#ff6b35,#f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>
                     {b.room?.images?.[0]
-                      ? <img src={getImgUrl(b.room.images[0])} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      ? <img loading="lazy" src={getImgUrl(b.room.images[0])} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       : "🏠"
                     }
                   </div>
@@ -107,7 +105,7 @@ export default function MyBookings() {
                       </span>
                     </div>
 
-                    <p style={{ margin: "0 0 8px", fontSize: 13, color: "#888" }}>📍 {b.room?.address || "—"}</p>
+                    <p style={{ margin: "0 0 8px", fontSize: 13, color: "#888" }}><img src={process.env.PUBLIC_URL + "/location-icon.png"} alt="location" style={{ width: 14, height: 14, objectFit: "contain", verticalAlign: "middle", marginRight: 3 }} />{b.room?.address || "—"}</p>
 
                     <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 13, color: "#555", fontWeight: 600 }}>📅 {b.date}</span>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/axiosInstance";
+import { useAuth } from "../context/AuthContext";
 import ToastContainer, { useToast } from "../components/Toast";
 import RoomMap from "../components/RoomMap";
 import { getImgUrl } from "../utils/getImgUrl";
@@ -19,7 +20,7 @@ export default function RoomDetail() {
   const [review, setReview] = useState({ rating: 5, comment: "" });
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [reviewSuccess, setReviewSuccess] = useState(false);
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchRoom();
@@ -28,8 +29,8 @@ export default function RoomDetail() {
   const fetchRoom = async () => {
     try {
       const [roomRes, reviewsRes] = await Promise.all([
-        axios.get(`${process.env.REACT_APP_API_URL}/api/rooms/${id}`),
-        axios.get(`${process.env.REACT_APP_API_URL}/api/reviews/${id}`),
+        api.get(`/api/rooms/${id}`),
+        api.get(`/api/reviews/${id}`),
       ]);
       setRoom({ ...roomRes.data, reviews: reviewsRes.data });
     } catch (err) {
@@ -43,14 +44,7 @@ export default function RoomDetail() {
     if (!user) return navigate("/login");
     if (!booking.date) return toast("Vui lòng chọn ngày xem phòng!", "error");
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/bookings`, {
-        room: id,
-        date: booking.date,
-        time: booking.time,
-        note: booking.note,
-      }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-      });
+      await api.post('/api/bookings', { room: id, date: booking.date, time: booking.time, note: booking.note });
       setBookingSuccess(true);
       setShowBooking(false);
       setTimeout(() => setBookingSuccess(false), 4000);
@@ -63,13 +57,7 @@ export default function RoomDetail() {
     if (!user) return navigate("/login");
     if (!review.comment) return toast("Vui lòng nhập nhận xét!", "error");
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/reviews`, {
-        room: id,
-        rating: review.rating,
-        comment: review.comment,
-      }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
-      });
+      await api.post('/api/reviews', { room: id, rating: review.rating, comment: review.comment });
       setReviewSuccess(true);
       setTimeout(() => setReviewSuccess(false), 3000);
       setReview({ rating: 5, comment: "" });
@@ -116,7 +104,7 @@ export default function RoomDetail() {
         padding: "0 40px", height: 64, boxShadow: "0 2px 20px rgba(0,0,0,0.06)"
       }}>
         <div onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #ff6b35, #f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🏠</div>
+          <img src="/house-icon.png" alt="TrọTốt" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "contain" }} />
           <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 20, color: "#1a1a1a" }}>TrọTốt</span>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -135,7 +123,7 @@ export default function RoomDetail() {
         <div style={{ fontSize: 13, color: "#888", marginBottom: 20, fontWeight: 600 }}>
           <span onClick={() => navigate("/")} style={{ cursor: "pointer", color: "#ff6b35" }}>Trang chủ</span>
           {" > "}
-          <span onClick={() => navigate("/")} style={{ cursor: "pointer", color: "#ff6b35" }}>Trang chủ</span>
+          <span onClick={() => navigate("/rooms")} style={{ cursor: "pointer", color: "#ff6b35" }}>Tìm phòng</span>
           {" > "}
           <span style={{ color: "#555" }}>{r.title}</span>
         </div>
@@ -147,10 +135,10 @@ export default function RoomDetail() {
             {/* Ảnh */}
             <div style={{ borderRadius: 20, overflow: "hidden", marginBottom: 12, position: "relative" }}>
               {r.images && r.images.length > 0 ? (
-                <img src={getImgUrl(r.images[activeImg])} alt={r.title}
+                <img loading="eager" src={getImgUrl(r.images[activeImg])} alt={r.title}
                   style={{ width: "100%", height: 380, objectFit: "cover", display: "block" }} />
               ) : (
-                <div style={{ height: 380, background: "linear-gradient(135deg, #ff6b35, #f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 80 }}>🏠</div>
+                <div style={{ height: 380, background: "linear-gradient(135deg, #ff6b35, #f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 80 }}><img src="/house-icon.png" alt="TrọTốt" style={{ width: "100%", height: "100%", objectFit: "contain" }} /></div>
               )}
               <span style={{
                 position: "absolute", top: 16, left: 16,
@@ -162,7 +150,7 @@ export default function RoomDetail() {
             {r.images && r.images.length > 1 && (
               <div style={{ display: "flex", gap: 8, marginBottom: 24, overflowX: "auto" }}>
                 {r.images.map((img, i) => (
-                  <img key={i} src={getImgUrl(img)} alt=""
+                  <img key={i} loading="lazy" src={getImgUrl(img)} alt=""
                     onClick={() => setActiveImg(i)}
                     style={{
                       width: 72, height: 56, objectFit: "cover", borderRadius: 10, cursor: "pointer", flexShrink: 0,
@@ -181,7 +169,7 @@ export default function RoomDetail() {
                 </span>
               </div>
 
-              <p style={{ color: "#888", fontSize: 14, margin: "0 0 16px" }}>📍 {r.address}</p>
+              <p style={{ color: "#888", fontSize: 14, margin: "0 0 16px" }}><img src={process.env.PUBLIC_URL + "/location-icon.png"} alt="location" style={{ width: 14, height: 14, objectFit: "contain", verticalAlign: "middle", marginRight: 3 }} />{r.address}</p>
 
               {/* Tags */}
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 20 }}>
@@ -214,7 +202,7 @@ export default function RoomDetail() {
                       background: "rgba(255,107,53,0.08)", color: "#ff6b35",
                       padding: "8px 16px", borderRadius: 12, fontSize: 13, fontWeight: 700
                     }}>
-                      {icons[a] || "✅"} {a}
+                      {icons[a] || ""} {a}
                     </span>
                   );
                 })}
@@ -223,7 +211,7 @@ export default function RoomDetail() {
 
             {/* Bản đồ */}
             <div style={{ background: "#fff", borderRadius: 20, padding: 28, marginBottom: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-              <h3 style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}>📍 Vị trí trên bản đồ</h3>
+              <h3 style={{ fontWeight: 800, fontSize: 16, marginBottom: 16 }}><img src={process.env.PUBLIC_URL + "/location-icon.png"} alt="location" style={{ width: 14, height: 14, objectFit: "contain", verticalAlign: "middle", marginRight: 3 }} />Vị trí trên bản đồ</h3>
               <RoomMap address={r.address} title={r.title} />
               <p style={{ margin: "10px 0 0", fontSize: 13, color: "#888" }}>📌 {r.address}</p>
             </div>
@@ -251,7 +239,7 @@ export default function RoomDetail() {
                     fontFamily: "Nunito", outline: "none"
                   }}
                 />
-                {reviewSuccess && <div style={{ color: "#2ec4b6", fontWeight: 700, fontSize: 13, marginTop: 8 }}>✅ Đã gửi đánh giá thành công!</div>}
+                {reviewSuccess && <div style={{ color: "#2ec4b6", fontWeight: 700, fontSize: 13, marginTop: 8 }}>Đã gửi đánh giá thành công!</div>}
                 <button onClick={handleReview} style={{
                   marginTop: 10, padding: "10px 20px", borderRadius: 10, border: "none",
                   background: "linear-gradient(135deg, #ff6b35, #f7931e)",
@@ -329,7 +317,7 @@ export default function RoomDetail() {
 
                 {bookingSuccess && (
                   <div style={{ marginTop: 12, background: "rgba(46,196,182,0.1)", color: "#2ec4b6", padding: 12, borderRadius: 10, fontWeight: 700, fontSize: 13, textAlign: "center" }}>
-                    ✅ Đặt lịch thành công! Chủ nhà sẽ liên hệ bạn sớm.
+                    Đặt lịch thành công! Chủ nhà sẽ liên hệ bạn sớm.
                   </div>
                 )}
               </div>
@@ -399,7 +387,7 @@ export default function RoomDetail() {
                 background: "linear-gradient(135deg, #ff6b35, #f7931e)",
                 color: "#fff", fontWeight: 800, cursor: "pointer",
                 boxShadow: "0 4px 16px rgba(255,107,53,0.3)"
-              }}>✅ Xác nhận đặt lịch</button>
+              }}>Xác nhận đặt lịch</button>
             </div>
           </div>
         </div>

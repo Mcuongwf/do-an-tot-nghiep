@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../utils/axiosInstance";
+import { useAuth } from "../../context/AuthContext";
 import ToastContainer, { useToast } from "../../components/Toast";
 import LandlordSidebar from "../../components/LandlordSidebar";
 import { SkeletonRow, Pagination } from "../../components/Skeleton";
@@ -14,7 +15,7 @@ const STATUS_STYLE = {
   "Đang xử lý": { bg: "rgba(67,97,238,0.1)", color: "#4361ee" },
   "Hoàn thành": { bg: "rgba(46,196,182,0.1)", color: "#2ec4b6" },
 };
-
+//hàm khởi tạo của quản lý bảo trì
 export default function MaintenancePage() {
   const navigate = useNavigate();
   const [list, setList] = useState([]);
@@ -29,72 +30,59 @@ export default function MaintenancePage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState({ title: "", description: "", roomId: "", userId: "" });
   const { toasts, toast } = useToast();
-  const token = localStorage.getItem("token");
-
+  const { user } = useAuth();
+//hook useeffect để khởi tạo trang
   useEffect(() => {
-    if (!token) { navigate("/login"); return; }
+    if (!user) { navigate("/login"); return; }
     fetchData();
-    axios.get(`${process.env.REACT_APP_API_URL}/api/rooms/my`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setRooms(res.data.rooms || [])).catch(err => console.log("Rooms lỗi:", err.message));
+    api.get(`/api/rooms/my`).then(res => setRooms(res.data.rooms || [])).catch(() => {});
 
-    axios.get(`${process.env.REACT_APP_API_URL}/api/contracts`, {
-      headers: { Authorization: `Bearer ${token}` }
-    }).then(res => setContracts(res.data || [])).catch(err => console.log("Contracts lỗi:", err.message));
+    api.get(`/api/contracts`).then(res => setContracts(res.data || [])).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
+//hàm lấy dữ liệu
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/maintenance`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get(`/api/maintenance`);
       setList(res.data);
     } catch (err) {
-      console.log("Lỗi:", err.message);
     } finally {
       setLoading(false);
     }
   };
-
+//hàm cập nhật trạng thái
   const handleUpdate = async () => {
     try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/api/maintenance/${selected.id}`, updateForm, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.put(`/api/maintenance/${selected.id}`, updateForm);
       setShowModal(false);
       fetchData();
     } catch (err) {
       toast("Lỗi cập nhật!", "error");
     }
   };
-
+//hàm xoá bảo trì
   const handleDelete = async (id) => {
     if (!window.confirm("Xác nhận xóa yêu cầu này?")) return;
     try {
-      await axios.delete(`${process.env.REACT_APP_API_URL}/api/maintenance/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/api/maintenance/${id}`);
       fetchData();
     } catch (err) {
       toast("Lỗi xóa!", "error");
     }
   };
-
+//hàm thêm bảo trì
   const handleAdd = async () => {
     if (!addForm.title) { toast("Vui lòng nhập tiêu đề!", "error"); return; }
     if (!addForm.description) { toast("Vui lòng nhập mô tả!", "error"); return; }
     if (!addForm.roomId) { toast("Vui lòng chọn phòng!", "error"); return; }
     if (!addForm.userId) { toast("Vui lòng chọn người báo cáo!", "error"); return; }
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/maintenance`, {
+      await api.post(`/api/maintenance`, {
         title: addForm.title,
         description: addForm.description,
         room: addForm.roomId,
         reportedBy: addForm.userId,
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       setShowAddModal(false);
       setAddForm({ title: "", description: "", roomId: "", userId: "" });
@@ -165,7 +153,7 @@ export default function MaintenancePage() {
             background: "linear-gradient(135deg, #ff6b35, #f7931e)",
             color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer",
             boxShadow: "0 4px 16px rgba(255,107,53,0.3)"
-          }}>➕ Thêm yêu cầu</button>
+          }}>Thêm yêu cầu</button>
         </div>
 
         {/* Stats */}
@@ -269,7 +257,7 @@ export default function MaintenancePage() {
       {showModal && selected && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
           <div style={{ background: "#fff", borderRadius: 24, padding: 36, width: "100%", maxWidth: 480, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-            <h3 style={{ margin: "0 0 20px", fontWeight: 900, fontSize: 20 }}>✏️ Cập nhật bảo trì</h3>
+            <h3 style={{ margin: "0 0 20px", fontWeight: 900, fontSize: 20 }}> Cập nhật bảo trì</h3>
             <div style={{ background: "#f8f7f4", borderRadius: 12, padding: 16, marginBottom: 20 }}>
               <div style={{ fontWeight: 800, fontSize: 15, marginBottom: 4 }}>{selected.title}</div>
               <div style={{ color: "#888", fontSize: 13 }}>{selected.description}</div>
@@ -295,7 +283,7 @@ export default function MaintenancePage() {
             </div>
             <div style={{ display: "flex", gap: 12 }}>
               <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "12px", borderRadius: 12, border: "1.5px solid #e5e2da", background: "#fff", color: "#888", fontWeight: 700, cursor: "pointer" }}>Hủy</button>
-              <button onClick={handleUpdate} style={{ flex: 2, padding: "12px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#ff6b35,#f7931e)", color: "#fff", fontWeight: 800, cursor: "pointer" }}>💾 Lưu thay đổi</button>
+              <button onClick={handleUpdate} style={{ flex: 2, padding: "12px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#ff6b35,#f7931e)", color: "#fff", fontWeight: 800, cursor: "pointer" }}>Lưu thay đổi</button>
             </div>
           </div>
         </div>
@@ -305,7 +293,7 @@ export default function MaintenancePage() {
       {showAddModal && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 20 }}>
           <div style={{ background: "#fff", borderRadius: 24, padding: 36, width: "100%", maxWidth: 480, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
-            <h3 style={{ margin: "0 0 20px", fontWeight: 900, fontSize: 20 }}>➕ Thêm yêu cầu bảo trì</h3>
+            <h3 style={{ margin: "0 0 20px", fontWeight: 900, fontSize: 20 }}>Thêm yêu cầu bảo trì</h3>
 
             <div style={{ marginBottom: 16 }}>
               <label style={{ fontSize: 13, fontWeight: 700, color: "#555", display: "block", marginBottom: 8 }}>Tiêu đề *</label>
@@ -345,7 +333,7 @@ export default function MaintenancePage() {
 
             <div style={{ display: "flex", gap: 12 }}>
               <button onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: "12px", borderRadius: 12, border: "1.5px solid #e5e2da", background: "#fff", color: "#888", fontWeight: 700, cursor: "pointer" }}>Hủy</button>
-              <button onClick={handleAdd} style={{ flex: 2, padding: "12px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#ff6b35,#f7931e)", color: "#fff", fontWeight: 800, cursor: "pointer" }}>➕ Thêm yêu cầu</button>
+              <button onClick={handleAdd} style={{ flex: 2, padding: "12px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#ff6b35,#f7931e)", color: "#fff", fontWeight: 800, cursor: "pointer" }}>Thêm yêu cầu</button>
             </div>
           </div>
         </div>

@@ -1,11 +1,12 @@
 import { Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 /**
  * allowedRoles: mảng role được phép, vd: ["landlord"], ["admin"], ["tenant", "landlord"]
  * Nếu không truyền allowedRoles → chỉ cần đăng nhập là vào được
  */
 export default function ProtectedRoute({ children, allowedRoles }) {
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const { user } = useAuth();
   const token = localStorage.getItem("token");
 
   if (!user || !token) {

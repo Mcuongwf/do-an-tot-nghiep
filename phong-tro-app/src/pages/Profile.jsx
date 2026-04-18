@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/axiosInstance";
+import { useAuth } from "../context/AuthContext";
 import { getImgUrl } from "../utils/getImgUrl";
 
 export default function Profile() {
@@ -13,6 +14,7 @@ export default function Profile() {
   const [avatarFile, setAvatarFile] = useState(null);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const { logout, updateUser } = useAuth();
   const token = localStorage.getItem("token");
   const avatarInputRef = useRef(null);
 
@@ -35,9 +37,7 @@ export default function Profile() {
       }
       // Gọi API cập nhật data mới nhất
       if (token) {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/users/me`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        const res = await api.get('/api/users/me');
         setUser(res.data);
         setForm({
           name: res.data.name || "",
@@ -46,7 +46,6 @@ export default function Profile() {
         });
       }
     } catch (err) {
-      console.log("Lỗi fetch profile:", err.message);
       // Không navigate login, dùng data từ localStorage
     }
   };
@@ -55,21 +54,17 @@ export default function Profile() {
     if (!form.name) return setError("Vui lòng nhập họ tên!");
     setLoading(true); setError(""); setSuccess("");
     try {
-      const res = await axios.put(`${process.env.REACT_APP_API_URL}/api/users/me`, form, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.put('/api/users/me', form);
       let updatedUser = res.data.user;
       if (avatarFile) {
         const formData = new FormData();
         formData.append("avatar", avatarFile);
-        const avatarRes = await axios.post(`${process.env.REACT_APP_API_URL}/api/users/me/avatar`, formData, {
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" }
-        });
+        const avatarRes = await api.post('/api/users/me/avatar', formData, { headers: { "Content-Type": "multipart/form-data" } });
         updatedUser = avatarRes.data.user;
         setAvatarFile(null);
         if (avatarInputRef.current) avatarInputRef.current.value = "";
       }
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+      updateUser(updatedUser);
       setUser(updatedUser);
       setSuccess("Cập nhật thông tin thành công!");
     } catch (err) {
@@ -86,10 +81,8 @@ export default function Profile() {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) return setError("Mật khẩu xác nhận không khớp!");
     setLoading(true); setError(""); setSuccess("");
     try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/api/users/change-password`, passwordForm, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSuccess("Đổi mật khẩu thành công! ✅");
+      await api.put('/api/users/change-password', passwordForm);
+      setSuccess("Đổi mật khẩu thành công! ");
       setPasswordForm({ oldPassword: "", newPassword: "", confirmPassword: "" });
     } catch (err) {
       setError(err.response?.data?.message || "Mật khẩu cũ không đúng!");
@@ -105,8 +98,7 @@ export default function Profile() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    logout();
     navigate("/login");
   };
 
@@ -134,7 +126,7 @@ export default function Profile() {
         padding: "0 40px", height: 64, boxShadow: "0 2px 20px rgba(0,0,0,0.06)"
       }}>
         <div onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #ff6b35, #f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🏠</div>
+          <img src="/house-icon.png" alt="TrọTốt" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "contain" }} />
           <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 20, color: "#1a1a1a" }}>TrọTốt</span>
         </div>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -159,7 +151,7 @@ export default function Profile() {
             overflow: "hidden",
           }}>
             {user.avatar
-              ? <img src={getImgUrl(user.avatar)} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ? <img loading="lazy" src={getImgUrl(user.avatar)} alt="avatar" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               : <span>👤</span>}
           </div>
           <div style={{ flex: 1 }}>
@@ -176,7 +168,7 @@ export default function Profile() {
             <button onClick={() => navigate("/landlord/dashboard")} style={{
               padding: "10px 20px", borderRadius: 12, border: "2px solid rgba(255,255,255,0.5)",
               background: "transparent", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer"
-            }}>🏠 Dashboard</button>
+            }}>Dashboard</button>
           )}
           {user.role === "admin" && (
             <button onClick={() => navigate("/admin/dashboard")} style={{
@@ -189,8 +181,8 @@ export default function Profile() {
         {/* TABS */}
         <div style={{ display: "flex", gap: 4, marginBottom: 24, background: "#fff", borderRadius: 14, padding: 6, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", width: "fit-content" }}>
           {[
-            { key: "info", label: "📝 Thông tin cá nhân" },
-            { key: "password", label: "🔒 Đổi mật khẩu" },
+            { key: "info", label: "Thông tin cá nhân" },
+            { key: "password", label: "Đổi mật khẩu" },
           ].map(tab => (
             <button key={tab.key} onClick={() => { setActiveTab(tab.key); setError(""); setSuccess(""); }} style={{
               padding: "10px 20px", borderRadius: 10, border: "none", cursor: "pointer",
@@ -249,7 +241,7 @@ export default function Profile() {
                 color: "#fff", fontWeight: 800, fontSize: 15, cursor: loading ? "not-allowed" : "pointer",
                 boxShadow: "0 4px 16px rgba(255,107,53,0.3)"
               }}>
-                {loading ? "⏳ Đang lưu..." : "💾 Lưu thay đổi"}
+                {loading ? "Đang lưu..." : "Lưu thay đổi"}
               </button>
             </div>
           )}
@@ -278,7 +270,7 @@ export default function Profile() {
                 color: "#fff", fontWeight: 800, fontSize: 15, cursor: loading ? "not-allowed" : "pointer",
                 boxShadow: "0 4px 16px rgba(255,107,53,0.3)"
               }}>
-                {loading ? "⏳ Đang lưu..." : "🔑 Đổi mật khẩu"}
+                {loading ? "Đang lưu..." : "Đổi mật khẩu"}
               </button>
             </div>
           )}

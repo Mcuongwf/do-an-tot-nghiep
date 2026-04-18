@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import axios from "axios";
 import { io as socketIO } from "socket.io-client";
+import api from "../utils/axiosInstance";
+import { useAuth } from "../context/AuthContext";
 import ToastContainer, { useToast } from "../components/Toast";
 import LandlordSidebar from "../components/LandlordSidebar";
 import { getImgUrl } from "../utils/getImgUrl";
@@ -25,9 +26,8 @@ export default function Messages() {
   const [searchParams] = useSearchParams();
   const { toasts, toast } = useToast();
 
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const { user } = useAuth();
   const token = localStorage.getItem("token");
-  const headers = { Authorization: `Bearer ${token}` };
 
   const [conversations, setConversations] = useState([]);
   const [activeConv, setActiveConv] = useState(null);
@@ -93,7 +93,7 @@ export default function Messages() {
 
   const fetchConversations = async () => {
     try {
-      const res = await axios.get(`${API}/api/messages/conversations`, { headers });
+      const res = await api.get(`/api/messages/conversations`);
       setConversations(res.data);
     } catch {}
     finally { setLoadingConvs(false); }
@@ -101,7 +101,7 @@ export default function Messages() {
 
   const openOrCreateConversation = async (userId, roomId) => {
     try {
-      const res = await axios.post(`${API}/api/messages/conversations`, { userId, roomId }, { headers });
+      const res = await api.post(`/api/messages/conversations`, { userId, roomId });
       setActiveConv(res.data);
       fetchMessages(res.data.id);
       fetchConversations();
@@ -116,7 +116,7 @@ export default function Messages() {
   const fetchMessages = async (convId, showLoading = true) => {
     if (showLoading) setLoadingMsgs(true);
     try {
-      const res = await axios.get(`${API}/api/messages/conversations/${convId}/messages`, { headers });
+      const res = await api.get(`/api/messages/conversations/${convId}/messages`);
       setMessages(res.data);
     } catch {}
     finally { if (showLoading) setLoadingMsgs(false); }
@@ -127,9 +127,9 @@ export default function Messages() {
     if (!content || !activeConv || sending) return;
     setSending(true);
     try {
-      const res = await axios.post(
+      const res = await api.post(
         `${API}/api/messages/conversations/${activeConv.id}/messages`,
-        { content }, { headers }
+        { content }
       );
       setMessages(prev => [...prev, res.data]);
       setInput("");
@@ -199,7 +199,7 @@ export default function Messages() {
           fontFamily: "'Nunito', sans-serif",
         }}>
           <div onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-            <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg,#ff6b35,#f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>🏠</div>
+            <img src="/house-icon.png" alt="TrọTốt" style={{ width: 34, height: 34, borderRadius: 10, objectFit: "contain" }} />
             <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 18, color: "#1a1a1a" }}>TrọTốt</span>
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
@@ -217,7 +217,7 @@ export default function Messages() {
           <div style={{ padding: "20px 20px 0" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => navigate("/")}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: "linear-gradient(135deg,#ff6b35,#f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13 }}>🏠</div>
+                <img src="/house-icon.png" alt="TrọTốt" style={{ width: 28, height: 28, borderRadius: 8, objectFit: "contain" }} />
                 <span style={{ fontWeight: 900, fontSize: 20, color: "#1a1a1a" }}>Chat</span>
               </div>
               <div style={{ display: "flex", gap: 4 }}>
@@ -298,7 +298,7 @@ return (
                     onClick={() => activeConv.room?.id && navigate(`/rooms/${activeConv.room.id}`)}>
                     <div style={{ width: 44, height: 44, borderRadius: 8, overflow: "hidden", background: "linear-gradient(135deg,#ff6b35,#f7931e)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {activeConv.room?.images?.[0]
-                        ? <img src={getImgUrl(activeConv.room.images[0])} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ? <img loading="lazy" src={getImgUrl(activeConv.room.images[0])} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                         : <span style={{ fontSize: 18 }}>🏠</span>}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>

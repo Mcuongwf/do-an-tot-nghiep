@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/axiosInstance";
+import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [role, setRole] = useState("tenant");
@@ -29,15 +31,14 @@ export default function Register() {
     if (Object.keys(e).length > 0) return;
     setLoading(true);
     try {
-      const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/register`, {
+      const res = await api.post('/api/auth/register', {
         name: form.name,
         email: form.email,
         password: form.password,
         phone: form.phone,
         role: role,
       });
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      login(res.data.token, res.data.user);
       setLoading(false);
       setSuccess(true);
     } catch (err) {
@@ -78,7 +79,7 @@ export default function Register() {
           <div style={{ position: "absolute", bottom: 40, left: -40, width: 160, height: 160, borderRadius: "50%", border: "2px solid rgba(247,147,30,0.15)" }} />
           <div style={{ position: "relative", zIndex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 44 }}>
-              <div style={{ width: 46, height: 46, borderRadius: 14, background: "linear-gradient(135deg,#ff6b35,#f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🏠</div>
+              <img src="/house-icon.png" alt="TrọTốt" style={{ width: 46, height: 46, borderRadius: 14, objectFit: "contain" }} />
               <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 22, color: "#fff" }}>TrọTốt</span>
             </div>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "2rem", fontWeight: 900, color: "#fff", lineHeight: 1.3, marginBottom: 16 }}>

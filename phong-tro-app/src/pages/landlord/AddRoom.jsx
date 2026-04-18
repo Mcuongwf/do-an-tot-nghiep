@@ -1,22 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../utils/axiosInstance";
+import { useAuth } from "../../context/AuthContext";
 import ToastContainer, { useToast } from "../../components/Toast";
 import { getImgUrl } from "../../utils/getImgUrl";
 
-const AMENITIES_LIST = ["WiFi", "Điều hòa", "WC riêng", "Bếp", "Máy giặt", "Tủ lạnh", "Bảo vệ 24/7", "Chỗ để xe", "Thang máy", "Hồ bơi", "Ban công", "Canteen"];
-const DISTRICTS_BY_PROVINCE = {
-  "TP. Hồ Chí Minh": ["Quận 1","Quận 2","Quận 3","Quận 4","Quận 5","Quận 6","Quận 7","Quận 8","Quận 9","Quận 10","Quận 11","Quận 12","Bình Thạnh","Gò Vấp","Tân Bình","Tân Phú","Thủ Đức","Bình Chánh","Hóc Môn","Nhà Bè"],
-  "Hà Nội": ["Ba Đình","Hoàn Kiếm","Đống Đa","Hai Bà Trưng","Hoàng Mai","Thanh Xuân","Cầu Giấy","Nam Từ Liêm","Bắc Từ Liêm","Tây Hồ","Long Biên","Hà Đông"],
-  "Đà Nẵng": ["Hải Châu","Thanh Khê","Sơn Trà","Ngũ Hành Sơn","Liên Chiểu","Cẩm Lệ","Hòa Vang"],
-  "Bắc Ninh": ["Thành phố Bắc Ninh","Từ Sơn","Tiên Du","Yên Phong","Quế Võ","Lương Tài","Gia Bình"],
-};
-const TYPES = ["Phòng trọ", "Studio", "Mini Apartment", "Căn hộ", "KTX"];
+import { AMENITIES_LIST, DISTRICTS_BY_PROVINCE, ROOM_TYPES } from "../../constants";
+const TYPES = ROOM_TYPES;
 //hàm khởi tạo 
 export default function AddRoom() {
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user") || "null");
-  const token = localStorage.getItem("token");
+  const { user } = useAuth();
 
   const { toasts, toast } = useToast();
   const [step, setStep] = useState(1);
@@ -52,9 +46,7 @@ export default function AddRoom() {
     try {
       const formData = new FormData();
       Array.from(files).forEach(f => formData.append("images", f));
-      const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/upload`, formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.post(`/api/upload`, formData);
       set("images", [...form.images, ...res.data.urls]);
     } catch (err) {
       toast("Lỗi upload ảnh!", "error");
@@ -113,15 +105,13 @@ export default function AddRoom() {
     }
     setLoading(true);
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/rooms`, {
+      await api.post(`/api/rooms`, {
         ...form,
         price: Number(form.price),
         area: Number(form.area),
         electricPrice: Number(form.electricPrice),
         waterPrice: Number(form.waterPrice),
         internetPrice: Number(form.internetPrice),
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       setSuccess(true);
     } catch (err) {
@@ -190,7 +180,7 @@ export default function AddRoom() {
         padding: "0 40px", height: 64, boxShadow: "0 2px 20px rgba(0,0,0,0.06)"
       }}>
         <div onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #ff6b35, #f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🏠</div>
+          <img src="/house-icon.png" alt="TrọTốt" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "contain" }} />
           <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 20, color: "#1a1a1a" }}>TrọTốt</span>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -211,7 +201,7 @@ export default function AddRoom() {
               color: step === i + 1 ? "#fff" : step > i + 1 ? "#2ec4b6" : "#aaa",
               fontWeight: 700, fontSize: 13, transition: "all 0.2s"
             }} onClick={() => step > i + 1 && setStep(i + 1)}>
-              {step > i + 1 ? "✅ " : `${i + 1}. `}{s}
+              {step > i + 1 ? "" : `${i + 1}. `}{s}
             </div>
           ))}
         </div>
@@ -363,7 +353,7 @@ export default function AddRoom() {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: 10, marginBottom: 24 }}>
                   {form.images.map((url, i) => (
                     <div key={i} style={{ position: "relative", borderRadius: 12, overflow: "hidden", aspectRatio: "1" }}>
-                      <img src={getImgUrl(url)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img loading="lazy" src={getImgUrl(url)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                       <button onClick={() => removeImage(i)} style={{
                         position: "absolute", top: 4, right: 4, background: "rgba(0,0,0,0.5)",
                         border: "none", borderRadius: "50%", width: 24, height: 24,
@@ -391,7 +381,7 @@ export default function AddRoom() {
                       color: selected ? "#ff6b35" : "#555",
                       transition: "all 0.2s"
                     }}>
-                      <span>{icons[a] || "✅"}</span> {a}
+                      <span>{icons[a] || ""}</span> {a}
                       {selected && <span style={{ marginLeft: "auto", fontSize: 16 }}>✓</span>}
                     </div>
                   );
@@ -399,7 +389,7 @@ export default function AddRoom() {
               </div>
               {form.amenities.length > 0 && (
                 <div style={{ marginTop: 20, padding: 14, background: "rgba(46,196,182,0.1)", borderRadius: 12, color: "#2ec4b6", fontWeight: 700, fontSize: 13 }}>
-                  ✅ Đã chọn {form.amenities.length} tiện ích: {form.amenities.join(", ")}
+                  Đã chọn {form.amenities.length} tiện ích: {form.amenities.join(", ")}
                 </div>
               )}
             </div>
@@ -429,7 +419,7 @@ export default function AddRoom() {
                 </div>
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #e5e2da" }}>
                   <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>Địa chỉ</div>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>📍 {form.address}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}><img src={process.env.PUBLIC_URL + "/location-icon.png"} alt="location" style={{ width: 14, height: 14, objectFit: "contain", verticalAlign: "middle", marginRight: 3 }} />{form.address}</div>
                 </div>
                 <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid #e5e2da" }}>
                   <div style={{ fontSize: 12, color: "#888", marginBottom: 6 }}>Mô tả</div>

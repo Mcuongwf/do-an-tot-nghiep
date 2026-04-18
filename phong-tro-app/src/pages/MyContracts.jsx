@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/axiosInstance";
+import { useAuth } from "../context/AuthContext";
 import { getImgUrl } from "../utils/getImgUrl";
 
 const STATUS_MAP = {
@@ -18,21 +19,18 @@ function formatDate(d) {
 
 export default function MyContracts() {
   const navigate = useNavigate();
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const { user } = useAuth();
 
   const [contracts, setContracts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
 
   useEffect(() => {
-    if (!token) { navigate("/login"); return; }
-    axios.get(`${process.env.REACT_APP_API_URL}/api/contracts/my`, {
-      headers: { Authorization: `Bearer ${token}` },
-    }).then(res => setContracts(Array.isArray(res.data) ? res.data : []))
+    if (!user) { navigate("/login"); return; }
+    api.get('/api/contracts/my').then(res => setContracts(Array.isArray(res.data) ? res.data : []))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [token, navigate]);
+  }, [user, navigate]);
 
   const filtered = contracts;
 
@@ -49,7 +47,7 @@ export default function MyContracts() {
         padding: "0 40px", height: 64, boxShadow: "0 2px 20px rgba(0,0,0,0.06)"
       }}>
         <div onClick={() => navigate("/")} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg,#ff6b35,#f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🏠</div>
+          <img src="/house-icon.png" alt="TrọTốt" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "contain" }} />
           <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 20, color: "#1a1a1a" }}>TrọTốt</span>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
@@ -89,7 +87,7 @@ export default function MyContracts() {
                   {/* Ảnh phòng */}
                   <div style={{ width: 160, flexShrink: 0, background: "#f0ede8", position: "relative", overflow: "hidden" }}>
                     {img ? (
-                      <img src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      <img loading="lazy" src={img} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     ) : (
                       <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>🏠</div>
                     )}
@@ -104,7 +102,7 @@ export default function MyContracts() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
                         <div>
                           <div style={{ fontWeight: 800, fontSize: 16, color: "#1a1a1a", marginBottom: 3 }}>{c.room?.title || "—"}</div>
-                          <div style={{ color: "#888", fontSize: 13 }}>📍 {c.room?.address || c.room?.district || "—"}</div>
+                          <div style={{ color: "#888", fontSize: 13 }}><img src={process.env.PUBLIC_URL + "/location-icon.png"} alt="location" style={{ width: 14, height: 14, objectFit: "contain", verticalAlign: "middle", marginRight: 3 }} />{c.room?.address || c.room?.district || "—"}</div>
                         </div>
                         <div style={{ textAlign: "right" }}>
                           <div style={{ fontWeight: 900, fontSize: 18, color: "#ff6b35" }}>{formatPrice(c.price)}đ</div>
@@ -165,7 +163,7 @@ export default function MyContracts() {
 
             <div style={{ background: "#f8f7f4", borderRadius: 12, padding: "12px 16px", marginBottom: 20 }}>
               <div style={{ fontWeight: 800, fontSize: 15 }}>{selected.room?.title}</div>
-              <div style={{ color: "#888", fontSize: 13, marginTop: 3 }}>📍 {selected.room?.address || selected.room?.district}</div>
+              <div style={{ color: "#888", fontSize: 13, marginTop: 3 }}><img src={process.env.PUBLIC_URL + "/location-icon.png"} alt="location" style={{ width: 14, height: 14, objectFit: "contain", verticalAlign: "middle", marginRight: 3 }} />{selected.room?.address || selected.room?.district}</div>
             </div>
 
             {[

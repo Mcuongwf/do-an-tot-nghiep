@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 const menuItems = [
   { icon: "📊", label: "Tổng quan", path: "/landlord/dashboard" },
@@ -15,8 +16,7 @@ export default function LandlordSidebar({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const userRaw = localStorage.getItem("user");
-  const user = (userRaw && userRaw !== "undefined") ? JSON.parse(userRaw) : {};
+  const { user, logout } = useAuth();
 
   const isActive = (item) => {
     if (item.key === "rooms") return false;
@@ -38,7 +38,7 @@ export default function LandlordSidebar({ children }) {
       }}>
         {/* Logo */}
         <div style={{ padding: "24px 18px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 12 }}>
-          <div onClick={() => navigate("/")} style={{ width: 38, height: 38, borderRadius: 12, flexShrink: 0, background: "linear-gradient(135deg, #ff6b35, #f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, cursor: "pointer" }}>🏠</div>
+          <img onClick={() => navigate("/")} src="/house-icon.png" alt="TrọTốt" style={{ width: 38, height: 38, borderRadius: 12, objectFit: "contain", cursor: "pointer", flexShrink: 0 }} />
           {sidebarOpen && <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 18, color: "#fff", whiteSpace: "nowrap" }}>TrọTốt</span>}
         </div>
 
@@ -79,7 +79,7 @@ export default function LandlordSidebar({ children }) {
               </div>
             )}
           </div>
-          <button onClick={() => { localStorage.removeItem("token"); localStorage.removeItem("user"); navigate("/login"); }} style={{
+          <button onClick={() => { logout(); navigate("/login"); }} style={{
             width: "100%", padding: "9px", borderRadius: 10,
             background: "rgba(255,68,68,0.15)", border: "none",
             color: "#ff4444", fontWeight: 700, fontSize: 13,

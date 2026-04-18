@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/axiosInstance";
+import { useAuth } from "../context/AuthContext";
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPass, setShowPass] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
@@ -24,15 +26,13 @@ export default function Login() {
     if (Object.keys(e).length > 0) return;
     setLoading(true);
     try {
-      const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
+      const res = await api.post('/api/auth/login', {
         email: form.email,
         password: form.password,
       });
-  
-      // Xóa data cũ trước khi lưu mới
+
       localStorage.clear();
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      login(res.data.token, res.data.user);
       setLoading(false);
   
       // Điều hướng theo role
@@ -82,7 +82,7 @@ export default function Login() {
           <div style={{ position: "absolute", bottom: -40, left: -40, width: 160, height: 160, borderRadius: "50%", background: "rgba(255,255,255,0.08)" }} />
           <div style={{ position: "relative", zIndex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 44 }}>
-              <div style={{ width: 46, height: 46, borderRadius: 14, background: "rgba(255,255,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22 }}>🏠</div>
+              <img src="/house-icon.png" alt="TrọTốt" style={{ width: 46, height: 46, borderRadius: 14, objectFit: "contain" }} />
               <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 22, color: "#fff" }}>TrọTốt</span>
             </div>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "2rem", fontWeight: 900, color: "#fff", lineHeight: 1.3, marginBottom: 16 }}>
@@ -168,7 +168,7 @@ export default function Login() {
                   color: "#fff", fontWeight: 800, fontSize: 15, cursor: loading ? "not-allowed" : "pointer",
                   boxShadow: loading ? "none" : "0 6px 20px rgba(255,107,53,0.35)", fontFamily: "inherit"
                 }}>
-                  {loading ? "⏳ Đang xử lý..." : "🔑 Đăng nhập"}
+                  {loading ? "Đang xử lý..." : "Đăng nhập"}
                 </button>
 
               </div>

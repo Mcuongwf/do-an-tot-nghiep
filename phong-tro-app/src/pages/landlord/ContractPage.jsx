@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../utils/axiosInstance";
+import { useAuth } from "../../context/AuthContext";
 import ToastContainer, { useToast } from "../../components/Toast";
 import LandlordSidebar from "../../components/LandlordSidebar";
 import { SkeletonRow, Pagination } from "../../components/Skeleton";
@@ -16,8 +17,7 @@ const STATUS_STYLE = {
 export default function ContractPage() {
   const navigate = useNavigate();
   const { toasts, toast } = useToast();
-  const token = localStorage.getItem("token");
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const { user } = useAuth();
 
   const [contracts, setContracts] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -40,7 +40,7 @@ export default function ContractPage() {
   });
 
   useEffect(() => {
-    if (!token) { navigate("/login"); return; }
+    if (!user) { navigate("/login"); return; }
     fetchAll();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -49,21 +49,14 @@ export default function ContractPage() {
     setLoading(true);
     try {
       const [contractsRes, roomsRes, usersRes] = await Promise.all([
-        axios.get(`${process.env.REACT_APP_API_URL}/api/contracts`, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        }),
-        axios.get(`${process.env.REACT_APP_API_URL}/api/rooms/my`, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        }),
-        axios.get(`${process.env.REACT_APP_API_URL}/api/users/tenants`, { 
-          headers: { Authorization: `Bearer ${token}` } 
-        }),
+        api.get(`/api/contracts`),
+        api.get(`/api/rooms/my`),
+        api.get(`/api/users/tenants`),
       ]);
       setContracts(contractsRes.data || []);
       setRooms(roomsRes.data.rooms || []);
       setUsers(usersRes.data || []);
     } catch (err) {
-      console.log("Lỗi:", err.message);
     } finally {
       setLoading(false);
     }
@@ -76,14 +69,14 @@ export default function ContractPage() {
     if (!form.endDate) { toast("Vui lòng chọn ngày kết thúc!", "error"); return; }
     if (!form.price) { toast("Vui lòng nhập giá thuê!", "error"); return; }
     try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/api/contracts`, {
+      await api.post(`/api/contracts`, {
         ...form,
         price: Number(form.price),
         deposit: Number(form.deposit),
         electricPrice: Number(form.electricPrice),
         waterPrice: Number(form.waterPrice),
         internetPrice: Number(form.internetPrice),
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      });
       setShowAddModal(false);
       setForm({ room: "", tenant: "", startDate: "", endDate: "", price: "", deposit: "", electricPrice: "3500", waterPrice: "15000", internetPrice: "0", note: "" });
       fetchAll();
@@ -110,14 +103,14 @@ export default function ContractPage() {
 //hàm chỉnh sủa/ cập nhật hợp đồng
   const handleEdit = async () => {
     try {
-      await axios.put(`${process.env.REACT_APP_API_URL}/api/contracts/${selected.id}`, {
+      await api.put(`/api/contracts/${selected.id}`, {
         ...editForm,
         price: Number(editForm.price),
         deposit: Number(editForm.deposit),
         electricPrice: Number(editForm.electricPrice),
         waterPrice: Number(editForm.waterPrice),
         internetPrice: Number(editForm.internetPrice),
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      });
       setShowEditModal(false);
       fetchAll();
       toast("Cập nhật hợp đồng thành công!", "success");
@@ -130,11 +123,11 @@ export default function ContractPage() {
     if (!window.confirm("Xác nhận thanh lý hợp đồng này?")) return;
     try {
       const contract = contracts.find(c => c.id === id);
-      await axios.put(`${process.env.REACT_APP_API_URL}/api/contracts/${id}`, { status: "terminated" }, { headers: { Authorization: `Bearer ${token}` } });
+      await api.put(`/api/contracts/${id}`, { status: "terminated" });
       setContracts(prev => prev.map(c => c.id === id ? { ...c, status: "terminated" } : c));
       const roomId = contract?.room_id || contract?.room?.id;
       if (roomId) {
-        await axios.put(`${process.env.REACT_APP_API_URL}/api/rooms/${roomId}`, { status: "Còn trống" }, { headers: { Authorization: `Bearer ${token}` } });
+        await api.put(`/api/rooms/${roomId}`, { status: "Còn trống" });
       }
       toast("Đã thanh lý hợp đồng!", "success");
     } catch (err) {
@@ -513,7 +506,7 @@ export default function ContractPage() {
 
             <div style={{ display: "flex", gap: 12 }}>
               <button onClick={() => setShowAddModal(false)} style={{ flex: 1, padding: "12px", borderRadius: 12, border: "1.5px solid #e5e2da", background: "#fff", color: "#888", fontWeight: 700, cursor: "pointer" }}>Hủy</button>
-              <button onClick={handleAdd} style={{ flex: 2, padding: "12px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#ff6b35,#f7931e)", color: "#fff", fontWeight: 800, cursor: "pointer" }}>✅ Tạo hợp đồng</button>
+              <button onClick={handleAdd} style={{ flex: 2, padding: "12px", borderRadius: 12, border: "none", background: "linear-gradient(135deg,#ff6b35,#f7931e)", color: "#fff", fontWeight: 800, cursor: "pointer" }}>Tạo hợp đồng</button>
             </div>
           </div>
         </div>

@@ -1,16 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../utils/axiosInstance";
+import { useAuth } from "../context/AuthContext";
 import { getImgUrl } from "../utils/getImgUrl";
+import { PROVINCES_FILTER, DISTRICTS_BY_PROVINCE, ROOM_TYPES_FILTER } from "../constants";
+import ChatBot from "../components/ChatBot";
+import RoomCard from "../components/RoomCard";
+import FilterSidebar from "../components/FilterSidebar";
 
-const PROVINCES = ["Tất cả", "TP. Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Bắc Ninh"];
-const DISTRICTS_BY_PROVINCE = {
-  "TP. Hồ Chí Minh": ["Quận 1","Quận 2","Quận 3","Quận 4","Quận 5","Quận 6","Quận 7","Quận 8","Quận 9","Quận 10","Quận 11","Quận 12","Bình Thạnh","Gò Vấp","Tân Bình","Tân Phú","Thủ Đức","Bình Chánh","Hóc Môn","Nhà Bè"],
-  "Hà Nội": ["Ba Đình","Hoàn Kiếm","Đống Đa","Hai Bà Trưng","Hoàng Mai","Thanh Xuân","Cầu Giấy","Nam Từ Liêm","Bắc Từ Liêm","Tây Hồ","Long Biên","Hà Đông"],
-  "Đà Nẵng": ["Hải Châu","Thanh Khê","Sơn Trà","Ngũ Hành Sơn","Liên Chiểu","Cẩm Lệ","Hòa Vang"],
-  "Bắc Ninh": ["Thành phố Bắc Ninh","Từ Sơn","Tiên Du","Yên Phong","Quế Võ","Lương Tài","Gia Bình"],
-};
-const TYPES = ["Tất cả", "Phòng trọ", "Studio", "Mini Apartment", "Căn hộ", "KTX"];
+const PROVINCES = PROVINCES_FILTER;
+const TYPES = ROOM_TYPES_FILTER;
 const SORT_OPTIONS = [
   { label: "Mới nhất", value: "newest" },
   { label: "Giá thấp → cao", value: "price_asc" },
@@ -22,10 +21,6 @@ const stats = [
   { value: "8,000+", label: "Khách thuê", icon: "🤝" },
   { value: "98%", label: "Hài lòng", icon: "⭐" },
 ];
-const amenityIcons = {
-  "Điều hòa": "❄️", WiFi: "📶", Bếp: "🍳", "Ban công": "🌿",
-  "Máy giặt": "🌀", "WC riêng": "🚿", "Tủ lạnh": "🧊", "Bảo vệ 24/7": "🔒",
-};
 
 function formatPrice(p) {
   return p >= 1000000
@@ -35,10 +30,9 @@ function formatPrice(p) {
 
 export default function Home() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const roomsRef = useRef(null);
   const LIMIT = 9;
-
-  const [user, setUser] = useState(null);
   const [heroLoaded, setHeroLoaded] = useState(false);
 
   const [search, setSearch] = useState("");
@@ -60,32 +54,13 @@ export default function Home() {
   const [showWishlist, setShowWishlist] = useState(false);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
 
-  const [chatOpen, setChatOpen] = useState(false);
-  const [chatMsg, setChatMsg] = useState("");
-  const [chatTyping, setChatTyping] = useState(false);
-  const [chatHistory, setChatHistory] = useState(() => {
-    try {
-      const saved = localStorage.getItem("chatHistory");
-      return saved ? JSON.parse(saved) : [{ role: "bot", text: "Xin chào! 👋 Tôi là trợ lý AI của TrọTốt. Tôi có thể giúp bạn tìm phòng, tư vấn giá cả hoặc hướng dẫn sử dụng app. Bạn cần hỗ trợ gì?" }];
-    } catch { return [{ role: "bot", text: "Xin chào! 👋 Tôi là trợ lý AI của TrọTốt. Bạn cần hỗ trợ gì?" }]; }
-  });
-
   useEffect(() => {
-    localStorage.setItem("chatHistory", JSON.stringify(chatHistory));
-  }, [chatHistory]);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser && savedUser !== "undefined") {
-      try { setUser(JSON.parse(savedUser)); } catch {}
-    }
     setTimeout(() => setHeroLoaded(true), 100);
   }, []);
 
   useEffect(() => {
     fetchRooms(1);
-    const token = localStorage.getItem("token");
-    if (token) fetchWishlist(token);
+    if (user) fetchWishlist();
   }, []);
 
   useEffect(() => {
@@ -94,17 +69,11 @@ export default function Home() {
   }, [search, province, district, type, minPrice, maxPrice, sort]);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const savedUser = localStorage.getItem("user");
-    if (!token || !savedUser) return;
-    let u;
-    try { u = JSON.parse(savedUser); } catch { return; }
+    if (!user) return;
     const fetchUnread = () => {
-      axios.get(`${process.env.REACT_APP_API_URL}/api/messages/conversations`, {
-        headers: { Authorization: `Bearer ${token}` }
-      }).then(res => {
+      api.get("/api/messages/conversations").then(res => {
         const total = (res.data || []).reduce((sum, conv) => {
-          const count = conv.unreadCount?.[u.id] ?? conv.unreadCount?.[String(u.id)] ?? 0;
+          const count = conv.unreadCount?.[user.id] ?? conv.unreadCount?.[String(user.id)] ?? 0;
           return sum + count;
         }, 0);
         setUnreadMsgCount(total);
@@ -113,7 +82,7 @@ export default function Home() {
     fetchUnread();
     const interval = setInterval(fetchUnread, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const fetchRooms = async (p = 1) => {
     try {
@@ -123,13 +92,14 @@ export default function Home() {
       if (district !== "Tất cả") {
         params.append("district", district);
       } else if (province !== "Tất cả") {
-        const districts = DISTRICTS_BY_PROVINCE[province] || [];
-        params.append("districts", districts.join(","));
+        params.append("province", province);
+        const districtList = DISTRICTS_BY_PROVINCE[province] || [];
+        if (districtList.length) params.append("districts", districtList.join(","));
       }
       if (type !== "Tất cả") params.append("type", type);
       if (minPrice) params.append("minPrice", minPrice);
       if (maxPrice) params.append("maxPrice", maxPrice);
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/rooms?${params}`);
+      const res = await api.get(`/api/rooms?${params}`);
       if (res.data.rooms) {
         setRooms(res.data.rooms);
         setTotalPages(res.data.totalPages || 1);
@@ -138,49 +108,23 @@ export default function Home() {
     } catch { setRooms([]); } finally { setLoading(false); }
   };
 
-  const fetchWishlist = async (token) => {
+  const fetchWishlist = async () => {
     try {
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/api/wishlist`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get('/api/wishlist');
       setWishlistItems(res.data.wishlist || []);
     } catch {}
   };
 
   const toggleWishlist = async (id) => {
     if (!user) return navigate("/login");
-    const token = localStorage.getItem("token");
     const roomObj = rooms.find(r => r.id === id);
     const isIn = wishlistItems.some(r => r.id === id);
     setWishlistItems(prev => isIn ? prev.filter(r => r.id !== id) : (roomObj ? [...prev, roomObj] : prev));
     try {
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/api/wishlist/toggle`,
-        { roomId: id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await api.post('/api/wishlist/toggle', { roomId: id });
       setWishlistItems(res.data.wishlist || []);
     } catch {
       setWishlistItems(prev => isIn ? (roomObj ? [...prev, roomObj] : prev) : prev.filter(r => r.id !== id));
-    }
-  };
-
-  const sendChat = async () => {
-    if (!chatMsg.trim() || chatTyping) return;
-    const userMsg = chatMsg.trim();
-    const newHistory = [...chatHistory, { role: "user", text: userMsg }];
-    setChatHistory(newHistory);
-    setChatMsg("");
-    setChatTyping(true);
-    try {
-      const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/chat`, {
-        messages: newHistory.map(m => ({ role: m.role === "user" ? "user" : "bot", text: m.text })),
-      });
-      setChatHistory(prev => [...prev, { role: "bot", text: res.data.reply }]);
-    } catch {
-      setChatHistory(prev => [...prev, { role: "bot", text: "Xin lỗi, trợ lý tạm thời không khả dụng. Vui lòng thử lại sau! 🙏" }]);
-    } finally {
-      setChatTyping(false);
     }
   };
 
@@ -213,7 +157,7 @@ export default function Home() {
         boxShadow: "0 2px 20px rgba(0,0,0,0.06)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "linear-gradient(135deg, #ff6b35, #f7931e)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🏠</div>
+          <img src="/house-icon.png" alt="TrọTốt" style={{ width: 36, height: 36, borderRadius: 10, objectFit: "contain" }} />
           <span style={{ fontFamily: "'Playfair Display', serif", fontWeight: 900, fontSize: 20, color: "#1a1a1a" }}>TrọTốt</span>
         </div>
 
@@ -270,7 +214,7 @@ export default function Home() {
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <div style={{ width: 52, height: 44, borderRadius: 8, overflow: "hidden", background: "linear-gradient(135deg,#ff6b35,#f7931e)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                         {room.images && room.images.length > 0
-                          ? <img src={getImgUrl(room.images[0])} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                          ? <img loading="lazy" src={getImgUrl(room.images[0])} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                           : <span style={{ fontSize: 20 }}>🏠</span>}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -294,7 +238,7 @@ export default function Home() {
               <span onClick={() => navigate("/profile")} style={{ background: "rgba(255,107,53,0.1)", color: "#ff6b35", padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                 👋 Xin chào, {user.name}!
               </span>
-              <button onClick={() => { localStorage.removeItem("token"); localStorage.removeItem("user"); setUser(null); }}
+              <button onClick={() => { logout(); }}
                 style={{ padding: "8px 16px", borderRadius: 8, border: "1.5px solid #e5e2da", background: "#fff", color: "#888", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
                 Đăng xuất
               </button>
@@ -399,90 +343,14 @@ export default function Home() {
 
         <div style={{ display: "flex", gap: 28 }}>
           {/* SIDEBAR */}
-          <div style={{ width: 268, flexShrink: 0 }}>
-            <div style={{ background: "#fff", borderRadius: 20, padding: 24, border: "1.5px solid #e8e4dd", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", position: "sticky", top: 80 }}>
-              {/* Header */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-                <h3 style={{ margin: 0, fontWeight: 900, fontSize: 16, color: "#1a1a1a" }}>Bộ lọc</h3>
-                <button onClick={() => { setSearch(""); setProvince("Tất cả"); setDistrict("Tất cả"); setType("Tất cả"); setMinPrice(""); setMaxPrice(""); }}
-                  style={{ fontSize: 12, color: "#ff6b35", background: "none", border: "none", cursor: "pointer", fontWeight: 700, fontFamily: "Nunito" }}>
-                  Xóa tất cả
-                </button>
-              </div>
-
-              {/* Tìm kiếm */}
-              <div style={{ marginBottom: 22 }}>
-                <label style={{ fontSize: 12, fontWeight: 800, color: "#888", display: "block", marginBottom: 8, letterSpacing: 0.5, textTransform: "uppercase" }}>Tìm kiếm</label>
-                <div style={{ position: "relative" }}>
-                  <span style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#aaa" }}>🔍</span>
-                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tên phòng, địa chỉ..."
-                    style={{ width: "100%", padding: "10px 12px 10px 34px", borderRadius: 10, border: "1.5px solid #e5e2da", fontSize: 13, boxSizing: "border-box", outline: "none", fontFamily: "Nunito" }} />
-                </div>
-              </div>
-
-              {/* Tỉnh/TP */}
-              <div style={{ marginBottom: 22 }}>
-                <label style={{ fontSize: 12, fontWeight: 800, color: "#888", display: "block", marginBottom: 10, letterSpacing: 0.5, textTransform: "uppercase" }}>Tỉnh/Thành phố</label>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  {PROVINCES.map(p => (
-                    <div key={p} onClick={() => { setProvince(p); setDistrict("Tất cả"); }}
-                      style={{ padding: "7px 12px", borderRadius: 8, marginBottom: 1, cursor: "pointer", fontSize: 13, fontWeight: 600, background: province === p ? "rgba(255,107,53,0.1)" : "transparent", color: province === p ? "#ff6b35" : "#555" }}>
-                      {p}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quận/Huyện */}
-              {province !== "Tất cả" && (
-                <div style={{ marginBottom: 22 }}>
-                  <label style={{ fontSize: 12, fontWeight: 800, color: "#888", display: "block", marginBottom: 10, letterSpacing: 0.5, textTransform: "uppercase" }}>Quận/Huyện</label>
-                  <div style={{ maxHeight: 180, overflowY: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
-                    {["Tất cả", ...(DISTRICTS_BY_PROVINCE[province] || [])].map(d => (
-                      <div key={d} onClick={() => setDistrict(d)}
-                        style={{ padding: "7px 12px", borderRadius: 8, marginBottom: 1, cursor: "pointer", fontSize: 13, fontWeight: 600, background: district === d ? "rgba(255,107,53,0.1)" : "transparent", color: district === d ? "#ff6b35" : "#555" }}>
-                        {d}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Loại phòng */}
-              <div style={{ marginBottom: 22 }}>
-                <label style={{ fontSize: 12, fontWeight: 800, color: "#888", display: "block", marginBottom: 10, letterSpacing: 0.5, textTransform: "uppercase" }}>Loại phòng</label>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  {TYPES.map(t => (
-                    <div key={t} onClick={() => setType(t)}
-                      style={{ padding: "7px 12px", borderRadius: 8, marginBottom: 1, cursor: "pointer", fontSize: 13, fontWeight: 600, background: type === t ? "rgba(255,107,53,0.1)" : "transparent", color: type === t ? "#ff6b35" : "#555" }}>
-                      {t}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Giá tối đa - Slider */}
-              <div style={{ marginBottom: 8 }}>
-                <label style={{ fontSize: 12, fontWeight: 800, color: "#888", display: "block", marginBottom: 10, letterSpacing: 0.5, textTransform: "uppercase" }}>Giá tối đa</label>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10 }}>
-                  <span style={{ fontSize: 12, color: "#aaa" }}>0đ</span>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: "#ff6b35" }}>
-                    {maxPrice ? `${(Number(maxPrice) / 1000000).toFixed(0)} triệu/tháng` : "Không giới hạn"}
-                  </span>
-                </div>
-                <input type="range" min={0} max={50000000} step={500000}
-                  value={maxPrice || 50000000}
-                  onChange={e => setMaxPrice(e.target.value === "50000000" ? "" : e.target.value)}
-                  className="price-slider"
-                  style={{ "--val": `${((maxPrice || 50000000) / 50000000) * 100}%` }}
-                />
-                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-                  <span style={{ fontSize: 11, color: "#bbb" }}>0</span>
-                  <span style={{ fontSize: 11, color: "#bbb" }}>50 triệu</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <FilterSidebar
+            search={search} setSearch={setSearch}
+            province={province} setProvince={setProvince}
+            district={district} setDistrict={setDistrict}
+            type={type} setType={setType}
+            maxPrice={maxPrice} setMaxPrice={setMaxPrice}
+            onReset={() => { setSearch(""); setProvince("Tất cả"); setDistrict("Tất cả"); setType("Tất cả"); setMinPrice(""); setMaxPrice(""); }}
+          />
 
           {/* ROOM GRID */}
           <div style={{ flex: 1 }}>
@@ -516,59 +384,13 @@ export default function Home() {
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: viewMode === "grid" ? "repeat(auto-fill, minmax(260px, 1fr))" : "1fr", gap: 20 }}>
                 {filtered.map(room => (
-                  <div key={room.id}
-                    onClick={() => navigate(`/rooms/${room.id}`)}
-                    onMouseEnter={e => { e.currentTarget.style.transform = "scale(1.02)"; e.currentTarget.style.boxShadow = "0 12px 36px rgba(0,0,0,0.14)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = "0 2px 16px rgba(0,0,0,0.07)"; }}
-                    style={{
-                      background: "#fff", borderRadius: 20, overflow: "hidden",
-                      boxShadow: "0 2px 16px rgba(0,0,0,0.07)",
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease", cursor: "pointer",
-                      display: viewMode === "list" ? "flex" : "block",
-                    }}>
-                    <div style={{
-                      width: viewMode === "list" ? 200 : "100%", height: viewMode === "list" ? 140 : 180,
-                      background: "linear-gradient(135deg, #ff6b35, #f7931e)",
-                      position: "relative", flexShrink: 0,
-                      display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden"
-                    }}>
-                      {room.images && room.images.length > 0
-                        ? <img src={getImgUrl(room.images[0])} alt={room.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                        : <span style={{ fontSize: 44 }}>🏠</span>}
-                      <span style={{ position: "absolute", top: 10, left: 10, background: room.status === "Còn trống" ? "#2ec4b6" : "#ff4444", color: "#fff", fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 20 }}>{room.status}</span>
-                      <button onClick={e => { e.stopPropagation(); toggleWishlist(room.id); }} style={{
-                        position: "absolute", top: 8, right: 8, background: "rgba(255,255,255,0.9)", border: "none", borderRadius: "50%",
-                        width: 30, height: 30, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center"
-                      }}>
-                        {wishlistItems.some(r => r.id === room.id) ? "❤️" : "🤍"}
-                      </button>
-                    </div>
-                    <div style={{ padding: 16, flex: 1 }}>
-                      <h3 style={{ margin: "0 0 4px", fontSize: 14, fontWeight: 800, color: "#1a1a1a", lineHeight: 1.4 }}>{room.title}</h3>
-                      <p style={{ margin: "0 0 8px", color: "#888", fontSize: 12 }}>📍 {room.address}</p>
-                      <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
-                        {[room.type, `${room.area}m²`, `⭐ ${room.rating}`].map((tag, i) => (
-                          <span key={i} style={{ background: "#f8f7f4", padding: "3px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700, color: "#555" }}>{tag}</span>
-                        ))}
-                      </div>
-                      {room.amenities && room.amenities.length > 0 && (
-                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
-                          {room.amenities.slice(0, 3).map(a => (
-                            <span key={a} style={{ background: "#f8f7f4", border: "1px solid #e5e2da", borderRadius: 6, padding: "2px 8px", fontSize: 11, color: "#666" }}>{amenityIcons[a] || ""} {a}</span>
-                          ))}
-                          {room.amenities.length > 3 && <span style={{ fontSize: 11, color: "#aaa" }}>+{room.amenities.length - 3}</span>}
-                        </div>
-                      )}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <span style={{ fontSize: 16, fontWeight: 900, color: "#ff6b35" }}>{formatPrice(room.price)}</span>
-                        <button onClick={e => { e.stopPropagation(); navigate(`/rooms/${room.id}`); }} style={{
-                          padding: "6px 14px", borderRadius: 8, border: "none",
-                          background: "linear-gradient(135deg, #ff6b35, #f7931e)",
-                          color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer"
-                        }}>Xem chi tiết</button>
-                      </div>
-                    </div>
-                  </div>
+                  <RoomCard
+                    key={room.id}
+                    room={room}
+                    viewMode={viewMode}
+                    isWishlisted={wishlistItems.some(r => r.id === room.id)}
+                    onWishlistToggle={toggleWishlist}
+                  />
                 ))}
               </div>
             )}
@@ -604,7 +426,7 @@ export default function Home() {
             {[
               { step: "01", icon: "🔍", title: "Tìm kiếm", desc: "Lọc theo khu vực, giá, tiện nghi để tìm phòng phù hợp" },
               { step: "02", icon: "📅", title: "Đặt lịch", desc: "Đặt lịch xem phòng trực tuyến, gặp chủ nhà trực tiếp" },
-              { step: "03", icon: "🤝", title: "Ký hợp đồng", desc: "Ký hợp đồng điện tử, chuyển cọc an toàn qua hệ thống" },
+              { step: "03", icon: "🤝", title: "Ký hợp đồng", desc: "Ký hợp đồng thuê phòng, theo dõi và quản lý hợp đồng trực tiếp trên hệ thống" },
             ].map(item => (
               <div key={item.step} style={{ padding: "32px 24px", borderRadius: 20, background: "#f8f7f4", position: "relative" }}>
                 <div style={{ position: "absolute", top: -16, left: "50%", transform: "translateX(-50%)", width: 36, height: 36, borderRadius: "50%", background: "linear-gradient(135deg, #ff6b35, #f7931e)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontSize: 13, fontWeight: 900 }}>
@@ -658,69 +480,7 @@ export default function Home() {
       </footer>
 
       {/* AI CHATBOT */}
-      <div style={{ position: "fixed", bottom: 28, right: 28, zIndex: 999 }}>
-        {chatOpen && (
-          <div style={{ position: "absolute", bottom: 70, right: 0, width: 500, background: "#fff", borderRadius: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.2)", overflow: "hidden" }}>
-            <div style={{ background: "linear-gradient(135deg, #ff6b35, #f7931e)", padding: "16px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>💬</div>
-                <div>
-                  <div style={{ color: "#fff", fontWeight: 800, fontSize: 14 }}>Trợ lý AI</div>
-                  <div style={{ color: "rgba(255,255,255,0.8)", fontSize: 11 }}>● Đang hoạt động</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => setChatHistory([{ role: "bot", text: "Xin chào! 👋 Tôi là trợ lý AI của TrọTốt. Bạn cần hỗ trợ gì?" }])}
-                  style={{ background: "rgba(255,255,255,0.2)", border: "none", color: "#fff", fontSize: 12, cursor: "pointer", borderRadius: 6, padding: "4px 8px" }}>Xóa</button>
-                <button onClick={() => setChatOpen(false)} style={{ background: "none", border: "none", color: "#fff", fontSize: 18, cursor: "pointer" }}>✕</button>
-              </div>
-            </div>
-            <div style={{ height: 500, overflowY: "auto", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-              {chatHistory.map((msg, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}>
-                  <div style={{
-                    maxWidth: "80%", padding: "10px 14px", borderRadius: msg.role === "user" ? "16px 16px 4px 16px" : "16px 16px 16px 4px",
-                    background: msg.role === "user" ? "linear-gradient(135deg, #ff6b35, #f7931e)" : "#f8f7f4",
-                    color: msg.role === "user" ? "#fff" : "#1a1a1a", fontSize: 13, lineHeight: 1.6,
-                  }}>
-                    {msg.text.split("\n").map((line, j) => {
-                      const m = line.match(/PHONG:\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(.+?)\s*\|\s*(\/rooms\/\d+)/);
-                      if (m) return (
-                        <div key={j} style={{ background: "#fff", borderRadius: 10, padding: 10, marginTop: 6, border: "1px solid #e5e2da" }}>
-                          <div style={{ fontWeight: 800, color: "#1a1a1a", fontSize: 13 }}>{m[1]}</div>
-                          <div style={{ color: "#ff6b35", fontWeight: 700, fontSize: 13 }}>{m[2]}</div>
-                          <div style={{ color: "#888", fontSize: 12 }}>{m[3]} • {m[4]}</div>
-                          <button onClick={() => navigate(m[5])} style={{ marginTop: 8, padding: "5px 12px", borderRadius: 6, border: "none", background: "linear-gradient(135deg,#ff6b35,#f7931e)", color: "#fff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>Xem chi tiết →</button>
-                        </div>
-                      );
-                      return <span key={j}>{line}<br /></span>;
-                    })}
-                  </div>
-                </div>
-              ))}
-              {chatTyping && (
-                <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                  <div style={{ background: "#f8f7f4", borderRadius: "16px 16px 16px 4px", padding: "10px 14px", fontSize: 13, color: "#888" }}>⏳ Đang trả lời...</div>
-                </div>
-              )}
-            </div>
-            <div style={{ padding: "12px 16px", borderTop: "1px solid #f0ede8", display: "flex", gap: 8 }}>
-              <input value={chatMsg} onChange={e => setChatMsg(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && !e.shiftKey && sendChat()}
-                placeholder="Hỏi tôi về phòng trọ..."
-                style={{ flex: 1, padding: "10px 14px", borderRadius: 10, border: "1.5px solid #e5e2da", fontSize: 13, outline: "none", fontFamily: "Nunito" }} />
-              <button onClick={sendChat} disabled={chatTyping}
-                style={{ padding: "10px 18px", borderRadius: 10, border: "none", background: chatTyping ? "#ccc" : "linear-gradient(135deg, #ff6b35, #f7931e)", color: "#fff", fontWeight: 700, cursor: chatTyping ? "not-allowed" : "pointer", fontSize: 13 }}>
-                Gửi
-              </button>
-            </div>
-          </div>
-        )}
-        <button onClick={() => setChatOpen(v => !v)}
-          style={{ width: 56, height: 56, borderRadius: "50%", border: "none", background: "linear-gradient(135deg, #ff6b35, #f7931e)", color: "#fff", fontSize: 24, cursor: "pointer", boxShadow: "0 4px 20px rgba(255,107,53,0.5)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          💬
-        </button>
-      </div>
+      <ChatBot />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../../utils/axiosInstance";
+import { useAuth } from "../../context/AuthContext";
 import ToastContainer, { useToast } from "../../components/Toast";
 import { getImgUrl } from "../../utils/getImgUrl";
 
@@ -17,8 +18,7 @@ export default function AdminDashboard() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toasts, toast } = useToast();
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const token = localStorage.getItem("token");
+  const { user, logout } = useAuth();
   const [filterRoom, setFilterRoom] = useState("Tất cả");
   const [selectedRoom, setSelectedRoom] = useState(null);
 
@@ -33,15 +33,13 @@ export default function AdminDashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const headers = { Authorization: `Bearer ${token}` };
       const [usersRes, roomsRes] = await Promise.all([
-        axios.get(`${process.env.REACT_APP_API_URL}/api/users`, { headers }),
-        axios.get(`${process.env.REACT_APP_API_URL}/api/rooms/all`, { headers }),
+        api.get(`/api/users`),
+        api.get(`/api/rooms/all`),
       ]);
       setUsers(usersRes.data);
       setRooms(roomsRes.data.rooms || []);
     } catch (err) {
-      console.log("Lỗi:", err.message);
     } finally {
       setLoading(false);
     }
@@ -49,9 +47,8 @@ export default function AdminDashboard() {
 //hàm xử lý logic khoá/mở ng dùng
   const handleLockUser = async (id, currentStatus) => {
     try {
-      const headers = { Authorization: `Bearer ${token}` };
       const action = currentStatus === "active" ? "lock" : "unlock";
-      await axios.put(`${process.env.REACT_APP_API_URL}/api/users/${id}/${action}`, {}, { headers });
+      await api.put(`/api/users/${id}/${action}`, {});
       fetchData();
     } catch (err) {
       toast("Lỗi: " + err.message, "error");
@@ -60,8 +57,7 @@ export default function AdminDashboard() {
 //hàm xử lý duyệt bài đăng trọ
   const handleApproveRoom = async (id) => {
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      await axios.put(`${process.env.REACT_APP_API_URL}/api/rooms/${id}/approve`, {}, { headers });
+      await api.put(`/api/rooms/${id}/approve`, {});
       fetchData();
     } catch (err) {
       toast("Lỗi: " + err.message, "error");
@@ -70,8 +66,7 @@ export default function AdminDashboard() {
 //hàm xử lý từ chối bài đăng
   const handleRejectRoom = async (id) => {
     try {
-      const headers = { Authorization: `Bearer ${token}` };
-      await axios.put(`${process.env.REACT_APP_API_URL}/api/rooms/${id}/reject`, {}, { headers });
+      await api.put(`/api/rooms/${id}/reject`, {});
       fetchData();
     } catch (err) {
       toast("Lỗi: " + err.message, "error");
@@ -79,8 +74,7 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    logout();
     navigate("/login");
   };
 
@@ -133,7 +127,7 @@ export default function AdminDashboard() {
             width: "100%", padding: "10px", borderRadius: 10,
             background: "rgba(255,68,68,0.15)", border: "none",
             color: "#ff4444", fontWeight: 700, fontSize: 13, cursor: "pointer"
-          }}>🚪 Đăng xuất</button>
+          }}>Đăng xuất</button>
         </div>
       </div>
 
@@ -255,7 +249,7 @@ export default function AdminDashboard() {
               {[
                 { key: "Tất cả", label: `Tất cả (${rooms.length})` },
                 { key: "pending",  label: `⏳ Chờ duyệt (${rooms.filter(r => r.postStatus === "pending").length})` },
-                { key: "approved", label: `✅ Đã duyệt (${rooms.filter(r => r.postStatus === "approved").length})` },
+                { key: "approved", label: `Đã duyệt (${rooms.filter(r => r.postStatus === "approved").length})` },
                 { key: "rejected", label: `❌ Từ chối (${rooms.filter(r => r.postStatus === "rejected").length})` },
               ].map(tab => (
                 <button key={tab.key} onClick={() => setFilterRoom(tab.key)} style={{
@@ -284,7 +278,7 @@ export default function AdminDashboard() {
                       <tr key={r.id} style={{ borderTop: "1px solid #f0f0f0", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
                         <td style={{ padding: "12px 16px", maxWidth: 220 }}>
                           <div style={{ fontWeight: 700, fontSize: 13, color: "#1a1a1a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.title}</div>
-                          <div style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>📍 {r.address}</div>
+                          <div style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}><img src={process.env.PUBLIC_URL + "/location-icon.png"} alt="location" style={{ width: 14, height: 14, objectFit: "contain", verticalAlign: "middle", marginRight: 3 }} />{r.address}</div>
                         </td>
                         <td style={{ padding: "12px 16px" }}>
                           <div style={{ fontWeight: 700, fontSize: 13 }}>{r.owner?.name || "—"}</div>
@@ -300,7 +294,7 @@ export default function AdminDashboard() {
                             background: r.postStatus === "approved" ? "rgba(46,196,182,0.1)" : r.postStatus === "rejected" ? "rgba(255,68,68,0.1)" : "rgba(247,147,30,0.1)",
                             color: r.postStatus === "approved" ? "#2ec4b6" : r.postStatus === "rejected" ? "#ff4444" : "#f7931e"
                           }}>
-                            {r.postStatus === "approved" ? "✅ Đã duyệt" : r.postStatus === "rejected" ? "❌ Từ chối" : "⏳ Chờ duyệt"}
+                            {r.postStatus === "approved" ? "Đã duyệt" : r.postStatus === "rejected" ? "❌ Từ chối" : "⏳ Chờ duyệt"}
                           </span>
                         </td>
                         <td style={{ padding: "12px 16px" }}>
@@ -308,15 +302,15 @@ export default function AdminDashboard() {
                             <button onClick={() => setSelectedRoom(r)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(67,97,238,0.1)", color: "#4361ee", fontWeight: 700, fontSize: 12 }}>Xem</button>
                             {r.postStatus === "pending" && (
                               <>
-                                <button onClick={() => handleApproveRoom(r.id)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(46,196,182,0.1)", color: "#2ec4b6", fontWeight: 700, fontSize: 12 }}>✅ Duyệt</button>
+                                <button onClick={() => handleApproveRoom(r.id)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(46,196,182,0.1)", color: "#2ec4b6", fontWeight: 700, fontSize: 12 }}>Duyệt</button>
                                 <button onClick={() => handleRejectRoom(r.id)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(255,68,68,0.1)", color: "#ff4444", fontWeight: 700, fontSize: 12 }}>❌ Từ chối</button>
                               </>
                             )}
                             {r.postStatus === "approved" && (
-                              <button onClick={() => handleRejectRoom(r.id)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(255,68,68,0.1)", color: "#ff4444", fontWeight: 700, fontSize: 12 }}>🚫 Gỡ xuống</button>
+                              <button onClick={() => handleRejectRoom(r.id)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(255,68,68,0.1)", color: "#ff4444", fontWeight: 700, fontSize: 12 }}>Gỡ xuống</button>
                             )}
                             {r.postStatus === "rejected" && (
-                              <button onClick={() => handleApproveRoom(r.id)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(46,196,182,0.1)", color: "#2ec4b6", fontWeight: 700, fontSize: 12 }}>↩ Duyệt lại</button>
+                              <button onClick={() => handleApproveRoom(r.id)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(46,196,182,0.1)", color: "#2ec4b6", fontWeight: 700, fontSize: 12 }}>Duyệt lại</button>
                             )}
                           </div>
                         </td>
@@ -340,20 +334,20 @@ export default function AdminDashboard() {
         <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: 20, width: 500, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
           {(() => {
             const imgs = typeof selectedRoom.images === "string" ? JSON.parse(selectedRoom.images || "[]") : (selectedRoom.images || []);
-            return imgs[0] ? <img src={getImgUrl(imgs[0])} alt="" style={{ width: "100%", height: 200, objectFit: "cover", borderRadius: "20px 20px 0 0" }} /> : null;
+            return imgs[0] ? <img loading="lazy" src={getImgUrl(imgs[0])} alt="" style={{ width: "100%", height: 200, objectFit: "cover", borderRadius: "20px 20px 0 0" }} /> : null;
           })()}
           <div style={{ padding: 24 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 900, color: "#1a1a1a", flex: 1, paddingRight: 12 }}>{selectedRoom.title}</h3>
               <span style={{ color: "#ff6b35", fontWeight: 800, fontSize: 16, whiteSpace: "nowrap" }}>{Number(selectedRoom.price).toLocaleString("vi-VN")}đ/tháng</span>
             </div>
-            <div style={{ color: "#888", fontSize: 13, marginBottom: 16 }}>📍 {selectedRoom.address}{selectedRoom.district ? ", " + selectedRoom.district : ""}</div>
+            <div style={{ color: "#888", fontSize: 13, marginBottom: 16 }}><img src={process.env.PUBLIC_URL + "/location-icon.png"} alt="location" style={{ width: 14, height: 14, objectFit: "contain", verticalAlign: "middle", marginRight: 3 }} />{selectedRoom.address}{selectedRoom.district ? ", " + selectedRoom.district : ""}</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
               {[
                 { label: "Loại phòng", value: selectedRoom.type },
                 { label: "Diện tích", value: `${selectedRoom.area} m²` },
                 { label: "Quận/Huyện", value: selectedRoom.district },
-                { label: "Trạng thái", value: selectedRoom.postStatus === "approved" ? "✅ Đã duyệt" : selectedRoom.postStatus === "rejected" ? "❌ Từ chối" : "⏳ Chờ duyệt" },
+                { label: "Trạng thái", value: selectedRoom.postStatus === "approved" ? "Đã duyệt" : selectedRoom.postStatus === "rejected" ? "❌ Từ chối" : "⏳ Chờ duyệt" },
                 { label: "Tiền điện", value: `${Number(selectedRoom.electricPrice).toLocaleString("vi-VN")}đ/kWh` },
                 { label: "Tiền nước", value: `${Number(selectedRoom.waterPrice).toLocaleString("vi-VN")}đ/m³` },
               ].map((item, i) => (
