@@ -76,9 +76,6 @@ export function Pagination({ page, totalPages, onChange }) {
         fontWeight: 700, fontSize: 13, cursor: page === totalPages ? "default" : "pointer"
       }}>→</button>
 
-      <span style={{ fontSize: 13, color: "#aaa", marginLeft: 6 }}>
-        {page} / {totalPages}
-      </span>
     </div>
   );
 }

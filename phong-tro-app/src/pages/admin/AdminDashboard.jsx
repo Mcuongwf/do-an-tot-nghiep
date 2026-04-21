@@ -4,6 +4,8 @@ import api from "../../utils/axiosInstance";
 import { useAuth } from "../../context/AuthContext";
 import ToastContainer, { useToast } from "../../components/Toast";
 import { getImgUrl } from "../../utils/getImgUrl";
+import AdminSidebar from "../../components/AdminSidebar";
+import { SkeletonRow } from "../../components/Skeleton";
 
 const MENU = [
   { key: "dashboard", label: "Tổng quan", icon: "📊" },
@@ -18,7 +20,7 @@ export default function AdminDashboard() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const { toasts, toast } = useToast();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [filterRoom, setFilterRoom] = useState("Tất cả");
   const [selectedRoom, setSelectedRoom] = useState(null);
 
@@ -28,6 +30,7 @@ export default function AdminDashboard() {
       return;
     }
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 //hàm fetch data để lấy dữ  liệu ng dùng và phòng trọ
   const fetchData = async () => {
@@ -73,11 +76,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   const stats = [
     { label: "Tổng người dùng", value: users.length, icon: "👥", color: "#4361ee" },
     { label: "Khách thuê", value: users.filter(u => u.role === "tenant").length, icon: "🙋", color: "#2ec4b6" },
@@ -88,51 +86,7 @@ export default function AdminDashboard() {
   return (
     <>
     <ToastContainer toasts={toasts} />
-    <div style={{ display: "flex", minHeight: "100vh", fontFamily: "'Nunito', sans-serif", background: "#f0f2f5" }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');`}</style>
-
-      {/* SIDEBAR */}
-      <div style={{
-        width: 240, background: "#1a1a2e", color: "#fff",
-        display: "flex", flexDirection: "column",
-        position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 10
-      }}>
-        <div style={{ padding: "28px 24px 20px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <div style={{ fontWeight: 900, fontSize: 18, marginBottom: 4 }}>🛡️ Admin Panel</div>
-          <div style={{ fontSize: 12, color: "#aaa" }}>TrọTốt Management</div>
-        </div>
-
-        <nav style={{ flex: 1, padding: "16px 12px" }}>
-          {MENU.map(m => (
-            <div key={m.key} onClick={() => setActive(m.key)} style={{
-              display: "flex", alignItems: "center", gap: 12,
-              padding: "12px 16px", borderRadius: 12, marginBottom: 4,
-              cursor: "pointer", fontWeight: 700, fontSize: 14,
-              background: active === m.key ? "rgba(255,107,53,0.15)" : "transparent",
-              color: active === m.key ? "#ff6b35" : "#aaa",
-              transition: "all 0.2s"
-            }}>
-              <span style={{ fontSize: 18 }}>{m.icon}</span>
-              {m.label}
-            </div>
-          ))}
-        </nav>
-
-        <div style={{ padding: "16px 12px", borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-          <div style={{ padding: "12px 16px", marginBottom: 8, borderRadius: 12, background: "rgba(255,255,255,0.05)" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{user.name}</div>
-            <div style={{ fontSize: 11, color: "#aaa" }}>Quản trị viên</div>
-          </div>
-          <button onClick={handleLogout} style={{
-            width: "100%", padding: "10px", borderRadius: 10,
-            background: "rgba(255,68,68,0.15)", border: "none",
-            color: "#ff4444", fontWeight: 700, fontSize: 13, cursor: "pointer"
-          }}>Đăng xuất</button>
-        </div>
-      </div>
-
-      {/* MAIN CONTENT */}
-      <div style={{ marginLeft: 240, flex: 1, padding: 32 }}>
+    <AdminSidebar active={active} onMenuChange={setActive}>
 
         {/* DASHBOARD */}
         {active === "dashboard" && (
@@ -182,7 +136,11 @@ export default function AdminDashboard() {
           <div>
             <h1 style={{ margin: "0 0 24px", fontWeight: 900, fontSize: 28, color: "#1a1a1a" }}>👥 Quản lý tài khoản</h1>
             {loading ? (
-              <div style={{ textAlign: "center", padding: 60, color: "#888" }}>⏳ Đang tải...</div>
+              <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <tbody>{[1,2,3,4,5].map(i => <SkeletonRow key={i} cols={6} />)}</tbody>
+                </table>
+              </div>
             ) : (
               <div style={{ background: "#fff", borderRadius: 20, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -262,7 +220,11 @@ export default function AdminDashboard() {
               ))}
             </div>
             {loading ? (
-              <div style={{ textAlign: "center", padding: 60, color: "#888" }}>⏳ Đang tải...</div>
+              <div style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <tbody>{[1,2,3,4,5].map(i => <SkeletonRow key={i} cols={6} />)}</tbody>
+                </table>
+              </div>
             ) : (
               <div style={{ background: "#fff", borderRadius: 16, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -294,7 +256,7 @@ export default function AdminDashboard() {
                             background: r.postStatus === "approved" ? "rgba(46,196,182,0.1)" : r.postStatus === "rejected" ? "rgba(255,68,68,0.1)" : "rgba(247,147,30,0.1)",
                             color: r.postStatus === "approved" ? "#2ec4b6" : r.postStatus === "rejected" ? "#ff4444" : "#f7931e"
                           }}>
-                            {r.postStatus === "approved" ? "Đã duyệt" : r.postStatus === "rejected" ? "❌ Từ chối" : "⏳ Chờ duyệt"}
+                            {r.postStatus === "approved" ? "Đã duyệt" : r.postStatus === "rejected" ? "Từ chối" : "Chờ duyệt"}
                           </span>
                         </td>
                         <td style={{ padding: "12px 16px" }}>
@@ -303,7 +265,7 @@ export default function AdminDashboard() {
                             {r.postStatus === "pending" && (
                               <>
                                 <button onClick={() => handleApproveRoom(r.id)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(46,196,182,0.1)", color: "#2ec4b6", fontWeight: 700, fontSize: 12 }}>Duyệt</button>
-                                <button onClick={() => handleRejectRoom(r.id)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(255,68,68,0.1)", color: "#ff4444", fontWeight: 700, fontSize: 12 }}>❌ Từ chối</button>
+                                <button onClick={() => handleRejectRoom(r.id)} style={{ padding: "5px 12px", borderRadius: 8, border: "none", cursor: "pointer", background: "rgba(255,68,68,0.1)", color: "#ff4444", fontWeight: 700, fontSize: 12 }}>Từ chối</button>
                               </>
                             )}
                             {r.postStatus === "approved" && (
@@ -325,8 +287,7 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
-      </div>
-    </div>
+    </AdminSidebar>
 
     {/* MODAL XEM CHI TIẾT PHÒNG */}
     {selectedRoom && (

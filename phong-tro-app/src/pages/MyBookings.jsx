@@ -17,6 +17,7 @@ export default function MyBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [cancelling, setCancelling] = useState(null);
 
   useEffect(() => {
     if (!user) { navigate("/login"); return; }
@@ -26,6 +27,19 @@ export default function MyBookings() {
   }, [user, navigate]);
 
   const filtered = filter === "all" ? bookings : bookings.filter(b => b.status === filter);
+
+  const handleCancel = async (id) => {
+    if (!window.confirm("Bạn có chắc muốn hủy lịch hẹn này?")) return;
+    setCancelling(id);
+    try {
+      await api.put(`/api/bookings/${id}`, { status: "cancelled" });
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: "cancelled" } : b));
+    } catch {
+      alert("Hủy lịch thất bại, vui lòng thử lại.");
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#f8f7f4", fontFamily: "'Nunito', sans-serif" }}>
@@ -122,12 +136,23 @@ export default function MyBookings() {
                     )}
                   </div>
 
-                  {/* Nút xem phòng */}
-                  {b.room?.id && (
-                    <button onClick={() => navigate(`/rooms/${b.room.id}`)} style={{ flexShrink: 0, padding: "8px 14px", borderRadius: 10, border: "1.5px solid #e5e2da", background: "#fff", color: "#555", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-                      Xem phòng
-                    </button>
-                  )}
+                  {/* Nút hành động */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, flexShrink: 0 }}>
+                    {b.room?.id && (
+                      <button onClick={() => navigate(`/rooms/${b.room.id}`)} style={{ padding: "8px 14px", borderRadius: 10, border: "1.5px solid #e5e2da", background: "#fff", color: "#555", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                        Xem phòng
+                      </button>
+                    )}
+                    {(b.status === "pending" || b.status === "confirmed") && (
+                      <button
+                        onClick={() => handleCancel(b.id)}
+                        disabled={cancelling === b.id}
+                        style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: cancelling === b.id ? "#fca5a5" : "#fee2e2", color: "#ef4444", fontWeight: 700, fontSize: 12, cursor: cancelling === b.id ? "not-allowed" : "pointer" }}
+                      >
+                        {cancelling === b.id ? "Đang hủy..." : "Hủy lịch"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}

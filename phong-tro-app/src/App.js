@@ -10,6 +10,7 @@ import RoomDetail from "./pages/RoomDetail";
 import AddRoom from "./pages/landlord/AddRoom";
 import MaintenancePage from "./pages/landlord/MaintenancePage";
 import ContractPage from "./pages/landlord/ContractPage";
+import RoomsPage from "./pages/landlord/RoomsPage";
 import ForgotPassword from "./pages/ForgotPassword";
 import Messages from "./pages/Messages";
 import MyBookings from "./pages/MyBookings";
@@ -54,6 +55,11 @@ function App() {
         <Route path="/landlord/dashboard" element={
           <ProtectedRoute allowedRoles={["landlord"]}>
             <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/landlord/rooms" element={
+          <ProtectedRoute allowedRoles={["landlord"]}>
+            <RoomsPage />
           </ProtectedRoute>
         } />
         <Route path="/landlord/add-room" element={

@@ -33,11 +33,20 @@ router.get("/all", protect, adminOnly, async (req, res) => {
 // GET /api/rooms — Public listing
 router.get("/", async (req, res) => {
   try {
-    const { district, districts, type, minPrice, maxPrice, search, page = 1, limit = 9 } = req.query;
+    const { province, district, districts, type, minPrice, maxPrice, search, sort, page = 1, limit = 9 } = req.query;
     const where = { postStatus: "approved", status: "Còn trống" };
 
-    if (district) where.district = district;
-    else if (districts) where.district = { [Op.in]: districts.split(",") };
+    if (district) {
+      where.district = district;
+    } else if (province) {
+      // Lọc theo province: ưu tiên field province, fallback districts nếu province NULL
+      where[Op.or] = [
+        { province: province },
+        ...(districts ? [{ district: { [Op.in]: districts.split(",") } }] : []),
+      ];
+    } else if (districts) {
+      where.district = { [Op.in]: districts.split(",") };
+    }
     if (type) where.type = type;
     if (minPrice || maxPrice) {
       where.price = {};
@@ -51,11 +60,15 @@ router.get("/", async (req, res) => {
       ];
     }
 
+    let order = [["created_at", "DESC"]];
+    if (sort === "price_asc") order = [["price", "ASC"]];
+    else if (sort === "price_desc") order = [["price", "DESC"]];
+
     const offset = (Number(page) - 1) * Number(limit);
     const { count: total, rows: rooms } = await Room.findAndCountAll({
       where,
       include: [{ model: User, as: "owner", attributes: ["id", "name", "phone"] }],
-      order: [["created_at", "DESC"]],
+      order,
       offset,
       limit: Number(limit),
     });

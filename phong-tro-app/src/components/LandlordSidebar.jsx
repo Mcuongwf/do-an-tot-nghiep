@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 
 const menuItems = [
   { icon: "📊", label: "Tổng quan", path: "/landlord/dashboard" },
-  { icon: "🏠", label: "Quản lý phòng", path: "/landlord/dashboard", key: "rooms" },
+  { icon: "🏠", label: "Quản lý phòng", path: "/landlord/rooms" },
   { icon: "📋", label: "Quản lý hợp đồng", path: "/landlord/contracts" },
   { icon: "🔧", label: "Quản lý bảo trì", path: "/landlord/maintenance" },
   { icon: "💬", label: "Tin nhắn", path: "/messages" },
@@ -18,10 +18,7 @@ export default function LandlordSidebar({ children }) {
   const location = useLocation();
   const { user, logout } = useAuth();
 
-  const isActive = (item) => {
-    if (item.key === "rooms") return false;
-    return location.pathname === item.path;
-  };
+  const isActive = (item) => location.pathname === item.path;
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "'Nunito', sans-serif", background: "#f0f2f5", overflow: "hidden" }}>

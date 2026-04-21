@@ -74,7 +74,7 @@ export default function Login() {
 
         {/* LEFT */}
         <div style={{
-          flex: 1, background: "linear-gradient(160deg, #ff6b35 0%, #f7931e 60%, #ffb347 100%)",
+          flex: 1, background: "linear-gradient(160deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%)",
           padding: "60px 44px", display: "flex", flexDirection: "column",
           justifyContent: "center", position: "relative", overflow: "hidden"
         }}>

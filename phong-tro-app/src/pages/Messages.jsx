@@ -50,7 +50,7 @@ export default function Messages() {
 
     // Kết nối socket
     const socket = socketIO(API, {
-      transports: ["websocket", "polling"],
+      transports: ["polling", "websocket"],
       reconnectionAttempts: 5,
       timeout: 5000,
     });
@@ -137,7 +137,7 @@ export default function Messages() {
     finally { setSending(false); }
   };
 
-  const getOther = (conv) => conv.participants?.find(p => String(p.id) !== String(user._id));
+  const getOther = (conv) => conv.participants?.find(p => String(p.id) !== String(user?.id || user?._id));
 
   const formatTime = (dateStr) => {
     if (!dateStr) return "";
@@ -324,7 +324,7 @@ return (
                     <div style={{ fontWeight: 700, fontSize: 14 }}>Hãy gửi tin nhắn đầu tiên!</div>
                   </div>
                 ) : messages.map((msg, i) => {
-                  const isMe = String(msg.sender?.id || msg.sender?._id || msg.sender) === String(user._id);
+                  const isMe = String(msg.sender?.id || msg.sender?._id || msg.sender) === String(user?.id || user?._id);
                   const showDate = i === 0 || new Date(messages[i - 1].createdAt).toDateString() !== new Date(msg.createdAt).toDateString();
                   return (
                     <div key={msg.id}>

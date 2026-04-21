@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { getImgUrl } from "../utils/getImgUrl";
 
 import { PROVINCES_FILTER, DISTRICTS_BY_PROVINCE, ROOM_TYPES_FILTER } from "../constants";
+import { SkeletonCard } from "../components/Skeleton";
 const PROVINCES = PROVINCES_FILTER;
 const TYPES = ROOM_TYPES_FILTER;
 const SORT_OPTIONS = [
@@ -219,7 +220,9 @@ export default function RoomList() {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: "center", padding: 80, color: "#888" }}>⏳ Đang tải...</div>
+            <div style={{ display: "grid", gridTemplateColumns: viewMode === "grid" ? "repeat(auto-fill, minmax(260px, 1fr))" : "1fr", gap: 20 }}>
+              {[1,2,3,4,5,6].map(i => <SkeletonCard key={i} />)}
+            </div>
           ) : filtered.length === 0 ? (
             <div style={{ textAlign: "center", padding: 80, color: "#888" }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>

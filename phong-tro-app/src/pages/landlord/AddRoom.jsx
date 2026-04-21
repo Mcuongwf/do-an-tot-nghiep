@@ -462,7 +462,7 @@ export default function AddRoom() {
                 color: "#fff", fontWeight: 800, fontSize: 15, cursor: loading ? "not-allowed" : "pointer",
                 boxShadow: "0 4px 16px rgba(255,107,53,0.3)"
               }}>
-                {loading ? "⏳ Đang đăng..." : "🚀 Đăng phòng ngay"}
+                {loading ? "Đang đăng..." : "Đăng phòng ngay"}
               </button>
             )}
           </div>

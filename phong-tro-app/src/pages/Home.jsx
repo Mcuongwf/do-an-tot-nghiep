@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { getImgUrl } from "../utils/getImgUrl";
 import { PROVINCES_FILTER, DISTRICTS_BY_PROVINCE, ROOM_TYPES_FILTER } from "../constants";
 import ChatBot from "../components/ChatBot";
+import { SkeletonCard } from "../components/Skeleton";
 import RoomCard from "../components/RoomCard";
 import FilterSidebar from "../components/FilterSidebar";
 
@@ -375,7 +376,9 @@ export default function Home() {
             </div>
 
             {loading ? (
-              <div style={{ textAlign: "center", padding: 80, color: "#888" }}>⏳ Đang tải...</div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 20 }}>
+                {[1,2,3,4,5,6].map(i => <SkeletonCard key={i} />)}
+              </div>
             ) : filtered.length === 0 ? (
               <div style={{ textAlign: "center", padding: 80, color: "#888" }}>
                 <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>

@@ -233,10 +233,16 @@ export default function MaintenancePage() {
                       </td>
                       <td style={{ padding: "14px 16px" }}>
                         <div style={{ display: "flex", gap: 8 }}>
-                          <button onClick={() => { setSelected(item); setUpdateForm({ status: item.status, cost: item.cost || "", note: item.note || "" }); setShowModal(true); }} style={{
-                            padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer",
-                            background: "rgba(67,97,238,0.1)", color: "#4361ee", fontWeight: 700, fontSize: 12
-                          }}>Cập nhật</button>
+                          <button
+                            disabled={item.status === "Hoàn thành"}
+                            onClick={() => { setSelected(item); setUpdateForm({ status: item.status, cost: item.cost || "", note: item.note || "" }); setShowModal(true); }}
+                            style={{
+                              padding: "6px 12px", borderRadius: 8, border: "none",
+                              cursor: item.status === "Hoàn thành" ? "not-allowed" : "pointer",
+                              background: item.status === "Hoàn thành" ? "#f0f0f0" : "rgba(67,97,238,0.1)",
+                              color: item.status === "Hoàn thành" ? "#bbb" : "#4361ee",
+                              fontWeight: 700, fontSize: 12
+                            }}>Cập nhật</button>
                           <button onClick={() => handleDelete(item.id)} style={{
                             padding: "6px 12px", borderRadius: 8, border: "none", cursor: "pointer",
                             background: "rgba(255,68,68,0.1)", color: "#ff4444", fontWeight: 700, fontSize: 12
