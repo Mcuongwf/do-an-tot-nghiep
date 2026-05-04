@@ -64,8 +64,8 @@ export default function Messages() {
       const currentConv = activeConvRef.current;
       if (currentConv && String(msg.conversationId) === String(currentConv.id)) {
         setMessages(prev => {
-          // Tránh duplicate nếu chính mình gửi
-          if (prev.some(m => m.id === msg.id)) return prev;
+          const isDuplicate = prev.some(m => String(m.id) === String(msg.id));          
+          if (isDuplicate) return prev; 
           return [...prev, msg];
         });
       }
@@ -76,6 +76,7 @@ export default function Messages() {
           : c
       ));
     });
+
 
     fetchConversations().then(() => {
       const withUser = searchParams.get("with");
@@ -131,7 +132,10 @@ export default function Messages() {
         `${API}/api/messages/conversations/${activeConv.id}/messages`,
         { content }
       );
-      setMessages(prev => [...prev, res.data]);
+      setMessages(prev => {
+        if (prev.some(m => m.id === res.data.id)) return prev;
+        return [...prev, res.data];
+      });      
       setInput("");
     } catch { toast("Gửi thất bại!", "error"); }
     finally { setSending(false); }
