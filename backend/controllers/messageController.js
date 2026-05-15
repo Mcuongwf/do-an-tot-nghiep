@@ -3,7 +3,6 @@ const { Conversation, Message, User, Room } = require("../models/index");
 
 const USER_ATTRS = ["id", "name", "email", "role"];
 
-// Helper function để xây dựng mảng người tham gia
 const buildParticipants = (conv) => {
   const p = [];
   if (conv.user1) p.push(conv.user1.toJSON ? conv.user1.toJSON() : conv.user1);
@@ -17,7 +16,6 @@ const CONV_INCLUDE = [
   { model: Room, as: "room", attributes: ["id", "title", "images", "price"] },
 ];
 
-// 1. Lấy danh sách cuộc trò chuyện
 exports.getConversations = async (req, res) => {
   try {
     const myId = req.user.id;
@@ -36,7 +34,6 @@ exports.getConversations = async (req, res) => {
   }
 };
 
-// 2. Tạo hoặc lấy cuộc trò chuyện
 exports.createConversation = async (req, res) => {
   try {
     const { userId, roomId } = req.body;
@@ -68,7 +65,6 @@ exports.createConversation = async (req, res) => {
   }
 };
 
-// 3. Lấy tin nhắn trong cuộc trò chuyện
 exports.getMessages = async (req, res) => {
   try {
     const messages = await Message.findAll({
@@ -82,56 +78,47 @@ exports.getMessages = async (req, res) => {
   }
 };
 
-// 4. Gửi tin nhắn mới (Có xử lý Socket.io)
 exports.sendMessage = async (req, res) => {
   try {
     const { content } = req.body;
-    const myId = req.user.id; // ID của chính bạn (người gửi)
+    const myId = req.user.id; 
     
     if (!content?.trim()) return res.status(400).json({ message: "Nội dung không được trống" });
 
-    // 1. Lưu tin nhắn vào CSDL
     const message = await Message.create({
       conversation_id: req.params.id,
       sender_id: myId,
       content: content.trim(),
     });
 
-    // 2. Cập nhật thông tin tin nhắn cuối cùng của hội thoại
     await Conversation.update(
       { lastMessage: content.trim(), lastMessageAt: new Date() },
       { where: { id: req.params.id } }
     );
 
-    // 3. Lấy đầy đủ thông tin sender để gửi qua socket
     const populated = await Message.findByPk(message.id, {
       include: [{ model: User, as: "sender", attributes: ["id", "name", "role"] }],
     });
 
-    // 4. XỬ LÝ SOCKET REALTIME (Sửa tại đây)
     const conversation = await Conversation.findByPk(req.params.id);
     if (conversation) {
       const io = req.app.get("io");
       const payload = { ...populated.toJSON(), conversationId: req.params.id };
 
-      // Xác định ai là người nhận (người còn lại trong cuộc hội thoại)
       const receiverId = String(conversation.user1Id) === String(myId) 
                          ? conversation.user2Id 
                          : conversation.user1Id;
 
-      // CHỈ PHÁT (EMIT) CHO NGƯỜI NHẬN
-      // Người gửi (chính bạn) đã được React cập nhật qua kết quả trả về của API bên dưới
+
       io.to(`user_${receiverId}`).emit("new_message", payload);
     }
 
-    // 5. Trả về kết quả cho chính người gửi qua HTTP Response
     res.status(201).json(populated);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 };
 
-// 5. Đánh dấu đã đọc
 exports.readConversation = async (req, res) => {
   res.json({ message: "OK" });
 };
