@@ -50,13 +50,30 @@ export default function RoomsPage() {
     } catch { toast("Lỗi cập nhật trạng thái!", "error"); }
   };
 
-  const handleDeleteRoom = async (id) => {
-    if (!window.confirm("Xác nhận xóa phòng này?")) return;
+  // const handleDeleteRoom = async (id) => {
+  //   if (!window.confirm("Xác nhận xóa phòng này?")) return;
+  //   try {
+  //     await api.delete(`/api/rooms/${id}`);
+  //     fetchAll();
+  //     toast("Đã xóa phòng!", "success");
+  //   } catch { toast("Lỗi xóa phòng!", "error"); }
+  // };
+  const handleDeleteRoom = async (room) => {
+    if (room.status === "Đang thuê") {
+      toast("Không thể xóa phòng đang có người thuê!", "error");
+      return;
+    }
+
+    if (!window.confirm(`Xác nhận xóa phòng "${room.title}"?`)) return;
+    
     try {
-      await api.delete(`/api/rooms/${id}`);
+      await api.delete(`/api/rooms/${room.id}`);
       fetchAll();
       toast("Đã xóa phòng!", "success");
-    } catch { toast("Lỗi xóa phòng!", "error"); }
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || "Lỗi xóa phòng!";
+      toast(errorMsg, "error");
+    }
   };
 
   const handleUpdateBooking = async (id, status) => {
@@ -148,6 +165,8 @@ export default function RoomsPage() {
                             <select value={room.status} onChange={e => handleUpdateStatus(room.id, e.target.value)} style={{
                               padding: "4px 10px", borderRadius: 20, fontSize: 11, fontWeight: 700,
                               border: "none", cursor: "pointer", outline: "none", fontFamily: "Nunito",
+                              whiteSpace: "nowrap",
+                              textAlign: "center",
                               background: room.status === "Đang thuê" ? "#f0fdf4" : room.status === "Còn trống" ? "#fffbeb" : "#fef2f2",
                               color: room.status === "Đang thuê" ? "#10b981" : room.status === "Còn trống" ? "#f59e0b" : "#ef4444",
                             }}>
@@ -169,7 +188,25 @@ export default function RoomsPage() {
                             <div style={{ display: "flex", gap: 6 }}>
                               <button onClick={() => { setOpenInEditMode(false); setSelectedRoom(room); }} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #e5e2da", background: "#fff", fontSize: 12, cursor: "pointer", color: "#555", fontWeight: 600 }}>Chi tiết</button>
                               <button onClick={() => { setOpenInEditMode(true); setSelectedRoom(room); }} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #bfdbfe", background: "#eff6ff", fontSize: 12, cursor: "pointer", color: "#3b82f6", fontWeight: 600 }}>Sửa</button>
-                              <button onClick={() => handleDeleteRoom(room.id)} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #fecaca", background: "#fef2f2", fontSize: 12, cursor: "pointer", color: "#ef4444", fontWeight: 600 }}>Xóa</button>
+                              {/* <button onClick={() => handleDeleteRoom(room.id)} style={{ padding: "5px 12px", borderRadius: 7, border: "1px solid #fecaca", background: "#fef2f2", fontSize: 12, cursor: "pointer", color: "#ef4444", fontWeight: 600 }}>Xóa</button> */}
+                              <button onClick={() => handleDeleteRoom(room)} disabled={room.status === "Đang thuê"} 
+                                style={{ 
+                                  padding: "5px 12px", 
+                                  borderRadius: 7, 
+                                  fontSize: 12, 
+                                  fontWeight: 600,
+                                  cursor: room.status === "Đang thuê" ? "not-allowed" : "pointer", 
+                                  border: room.status === "Đang thuê" ? "1px solid #e5e7eb" : "1px solid #fecaca", 
+                                  background: room.status === "Đang thuê" ? "#f3f4f6" : "#fef2f2", 
+                                  color: room.status === "Đang thuê" ? "#9ca3af" : "#ef4444",
+                                  opacity: room.status === "Đang thuê" ? 0.6 : 1,
+                                  transition: "all 0.15s ease"
+                                }}
+                                title={room.status === "Đang thuê" ? "Không thể xóa phòng trọ đang có người thuê" : "Xóa phòng"}
+                              >
+                                Xóa
+                              </button>
+
                             </div>
                           </td>
                         </tr>

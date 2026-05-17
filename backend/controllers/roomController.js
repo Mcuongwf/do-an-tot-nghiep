@@ -124,6 +124,11 @@ exports.deleteRoom = async (req, res) => {
     if (room.owner_id !== req.user.id && req.user.role !== "admin") {
       return res.status(403).json({ message: "Không có quyền xóa" });
     }
+    if (room.status === "Đang thuê") {
+      return res.status(400).json({ 
+        message: "Không thể xóa phòng trọ đang có người thuê. Vui lòng chấm dứt hợp đồng trước khi thực hiện." 
+      });
+    }
     await room.destroy();
     res.json({ message: "Xóa phòng thành công!" });
   } catch (error) {

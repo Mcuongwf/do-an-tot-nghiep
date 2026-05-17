@@ -9,7 +9,7 @@ export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+  const [success] = useState(false);
 
   const validate = () => {
     const e = {};
@@ -138,7 +138,7 @@ export default function Login() {
                     onFocus={e => e.target.style.borderColor = "#ff6b35"}
                     onBlur={e => e.target.style.borderColor = errors.email ? "#ef4444" : "#e5e2da"}
                   />
-                  {errors.email && <p style={{ color: "#ef4444", fontSize: 12, margin: "4px 0 0" }}>⚠ {errors.email}</p>}
+                  {errors.email && <p style={{ color: "#ef4444", fontSize: 12, margin: "4px 0 0" }}> {errors.email}</p>}
                 </div>
 
                 <div>
@@ -155,7 +155,7 @@ export default function Login() {
                       {showPass ? "🙈" : "👁"}
                     </button>
                   </div>
-                  {errors.password && <p style={{ color: "#ef4444", fontSize: 12, margin: "4px 0 0" }}>⚠ {errors.password}</p>}
+                  {errors.password && <p style={{ color: "#ef4444", fontSize: 12, margin: "4px 0 0" }}> {errors.password}</p>}
                 </div>
 
                 <div style={{ textAlign: "right", marginTop: -8 }}>

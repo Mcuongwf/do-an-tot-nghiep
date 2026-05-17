@@ -20,7 +20,6 @@ export default function ChatBot() {
     }
   });
 
-  // Tự động cuộn xuống khi có tin nhắn mới
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -52,7 +51,7 @@ export default function ChatBot() {
       {chatOpen && (
         <div style={{ 
           position: "absolute", bottom: 70, right: 0, 
-          width: 380, // Đã thu nhỏ từ 500 xuống 380
+          width: 380, 
           background: "#fff", borderRadius: 16, 
           boxShadow: "0 10px 40px rgba(0,0,0,0.15)", overflow: "hidden",
           display: "flex", flexDirection: "column"
