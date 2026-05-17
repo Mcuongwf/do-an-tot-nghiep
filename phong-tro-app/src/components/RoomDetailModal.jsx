@@ -11,6 +11,7 @@ export default function RoomDetailModal({ selectedRoom, initialEditMode = false,
   const [editForm, setEditForm] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
 
+
   useEffect(() => {
     if (selectedRoom) {
       setEditMode(initialEditMode);
@@ -28,7 +29,7 @@ export default function RoomDetailModal({ selectedRoom, initialEditMode = false,
         amenities: selectedRoom.amenities || [],
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRoom]);
 
   const toggleAmenityEdit = (a) => {

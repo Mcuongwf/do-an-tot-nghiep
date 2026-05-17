@@ -33,9 +33,9 @@ Contract.belongsTo(User, { foreignKey: "tenant_id", as: "tenant" });
 Contract.belongsTo(User, { foreignKey: "landlord_id", as: "landlord" });
 
 //Conversation
-Conversation.belongsTo(User, { foreignKey: "user1_id", as: "user1" });
-Conversation.belongsTo(User, { foreignKey: "user2_id", as: "user2" });
-Conversation.belongsTo(Room, { foreignKey: "room_id", as: "room" });
+Conversation.belongsTo(User, { foreignKey: "user1Id", as: "user1" });
+Conversation.belongsTo(User, { foreignKey: "user2Id", as: "user2" });
+Conversation.belongsTo(Room, { foreignKey: "roomId", as: "room" });
 
 //Message
 Message.belongsTo(Conversation, { foreignKey: "conversation_id", as: "conversation" });

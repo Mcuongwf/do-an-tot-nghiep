@@ -4,7 +4,6 @@ const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL,
 });
 
-// Tự động gắn token vào mọi request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {
@@ -13,7 +12,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Tự động xử lý 401 - hết phiên đăng nhập
 api.interceptors.response.use(
   (response) => response,
   (error) => {

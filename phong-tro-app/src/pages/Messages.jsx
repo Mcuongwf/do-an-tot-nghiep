@@ -21,7 +21,6 @@ const QUICK_REPLIES = [
   "Có thể xem phòng trực tiếp không ạ?",
 ];
 
-// ✅ Fix 3: Avatar ra ngoài component — tránh tạo lại mỗi lần render
 const Avatar = ({ name, role, size = 40 }) => (
   <div style={{
     width: size, height: size, borderRadius: "50%", flexShrink: 0,
@@ -49,7 +48,6 @@ export default function Messages() {
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
-  // ✅ Fix 2: Bỏ filter state không dùng
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
   const activeConvRef = useRef(null);
@@ -92,7 +90,6 @@ export default function Messages() {
     });
 
     return () => socket.disconnect();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -219,14 +216,12 @@ export default function Messages() {
         paddingTop: isLandlord ? 0 : 60,
       }}>
 
-        {/* SIDEBAR */}
-        {/* ✅ Fix 4: Responsive sidebar width */}
+
         <div style={{
           width: "clamp(280px, 30%, 360px)",
           background: "#fff", display: "flex", flexDirection: "column",
           borderRight: "1px solid #e8e8e8", flexShrink: 0,
         }}>
-          {/* Sidebar Header */}
           <div style={{ padding: "20px 20px 0" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => navigate("/")}>
@@ -236,7 +231,6 @@ export default function Messages() {
               <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#555", padding: "6px 8px", borderRadius: 8 }}>⋯</button>
             </div>
 
-            {/* ✅ Fix 1: Search bar */}
             <input
               className="search-input"
               value={search}
@@ -253,7 +247,6 @@ export default function Messages() {
             />
           </div>
 
-          {/* Conversation list */}
           <div style={{ flex: 1, overflowY: "auto" }}>
             {loadingConvs ? (
               <div style={{ textAlign: "center", padding: 40, color: "#bbb", fontSize: 13 }}>Đang tải...</div>
@@ -299,7 +292,6 @@ export default function Messages() {
           </div>
         </div>
 
-        {/* CHAT AREA */}
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
           {!activeConv ? (
             <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "#ccc", gap: 12, background: "#f8f7f4" }}>
@@ -309,7 +301,6 @@ export default function Messages() {
             </div>
           ) : (
             <>
-              {/* Chat Header */}
               <div style={{ background: "#fff", padding: "14px 24px", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
                 <Avatar name={other?.name} role={other?.role} size={42} />
                 <div style={{ flex: 1 }}>
@@ -321,7 +312,6 @@ export default function Messages() {
                 </div>
               </div>
 
-              {/* Room info card */}
               {activeConv.room?.title && (
                 <div style={{ background: "#fff", borderBottom: "1px solid #eee", padding: "12px 24px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, background: "#f8f7f4", borderRadius: 12, padding: "10px 14px", cursor: "pointer" }}
@@ -344,7 +334,6 @@ export default function Messages() {
                 </div>
               )}
 
-              {/* Messages */}
               <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px", display: "flex", flexDirection: "column", gap: 6, background: "#f8f7f4" }}>
                 {loadingMsgs ? (
                   <div style={{ textAlign: "center", padding: 40, color: "#bbb", fontSize: 13 }}>Đang tải tin nhắn...</div>
@@ -391,7 +380,6 @@ export default function Messages() {
                 <div ref={messagesEndRef} />
               </div>
 
-              {/* Quick replies - chỉ hiện cho tenant */}
               {user.role === "tenant" && (
                 <div style={{ background: "#fff", borderTop: "1px solid #eee", padding: "10px 24px", overflowX: "auto", display: "flex", gap: 8, flexShrink: 0 }}>
                   {QUICK_REPLIES.map((q, i) => (
@@ -409,7 +397,6 @@ export default function Messages() {
                 </div>
               )}
 
-              {/* Input */}
               <div style={{ background: "#fff", borderTop: "1px solid #eee", padding: "14px 24px" }}>
                 <textarea
                   value={input}

@@ -51,25 +51,46 @@ exports.createConversation = async (req, res) => {
       include: CONV_INCLUDE,
     });
 
-    if (!conversation) {
-      conversation = await Conversation.create({
-        user1Id: myId,
-        user2Id: otherId,
-        roomId: roomId ? Number(roomId) : null,
-      });
-      conversation = await Conversation.findByPk(conversation.id, {
-        include: CONV_INCLUDE,
-      });
-    } else if (roomId) {
-      // ✅ Cập nhật phòng đang hỏi
-      await conversation.update({ roomId: Number(roomId) });
-      await conversation.reload({ include: CONV_INCLUDE });
-    }
+    // if (!conversation) {
+    //   conversation = await Conversation.create({
+    //     user1Id: myId,
+    //     user2Id: otherId,
+    //     roomId: roomId ? Number(roomId) : null,
+    //   });
+    //   conversation = await Conversation.findByPk(conversation.id, {
+    //     include: CONV_INCLUDE,
+    //   });
+    // } else if (roomId) {
+    //   await conversation.update({ roomId: Number(roomId) });
+    //   await conversation.reload({ include: CONV_INCLUDE });
+    // }
 
-    res.json({
-      ...conversation.toJSON(),
-      participants: buildParticipants(conversation),
-    });
+    // res.json({
+    //   ...conversation.toJSON(),
+    //   participants: buildParticipants(conversation),
+    // });
+
+if (!conversation) {
+  conversation = await Conversation.create({
+    user1Id: myId,
+    user2Id: otherId,
+    roomId: roomId ? Number(roomId) : null,
+  });
+  conversation = await Conversation.findByPk(conversation.id, {
+    include: CONV_INCLUDE,
+  });
+} else if (roomId) {
+  await conversation.update({ roomId: Number(roomId) });
+  
+  conversation = await Conversation.findByPk(conversation.id, {
+    include: CONV_INCLUDE,
+  });
+}
+
+res.json({
+  ...conversation.toJSON(),
+  participants: buildParticipants(conversation),
+});
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

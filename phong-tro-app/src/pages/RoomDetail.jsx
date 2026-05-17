@@ -24,6 +24,7 @@ export default function RoomDetail() {
 
   useEffect(() => {
     fetchRoom();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const fetchRoom = async () => {
@@ -61,7 +62,7 @@ export default function RoomDetail() {
       setReviewSuccess(true);
       setTimeout(() => setReviewSuccess(false), 3000);
       setReview({ rating: 5, comment: "" });
-      fetchRoom(); // Reload để cập nhật đánh giá mới
+      fetchRoom();
     } catch (err) {
       toast(err.response?.data?.message || "Lỗi gửi đánh giá!", "error");
     }
