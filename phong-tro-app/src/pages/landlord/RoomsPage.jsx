@@ -172,7 +172,6 @@ export default function RoomsPage() {
                             }}>
                               <option value="Còn trống">Còn trống</option>
                               <option value="Đang thuê">Đang thuê</option>
-                              <option value="Bảo trì">Bảo trì</option>
                             </select>
                           </td>
                           <td style={{ padding: "14px" }}>

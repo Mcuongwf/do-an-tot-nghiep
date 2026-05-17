@@ -21,6 +21,18 @@ const QUICK_REPLIES = [
   "Có thể xem phòng trực tiếp không ạ?",
 ];
 
+// ✅ Fix 3: Avatar ra ngoài component — tránh tạo lại mỗi lần render
+const Avatar = ({ name, role, size = 40 }) => (
+  <div style={{
+    width: size, height: size, borderRadius: "50%", flexShrink: 0,
+    background: role === "landlord" ? "linear-gradient(135deg,#ff6b35,#f7931e)" : "linear-gradient(135deg,#4361ee,#2ec4b6)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    color: "#fff", fontWeight: 800, fontSize: size * 0.38,
+  }}>
+    {name?.charAt(0)?.toUpperCase() || "?"}
+  </div>
+);
+
 export default function Messages() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -37,18 +49,16 @@ export default function Messages() {
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [sending, setSending] = useState(false);
   const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
+  // ✅ Fix 2: Bỏ filter state không dùng
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
   const activeConvRef = useRef(null);
 
-  // Sync activeConv vào ref để dùng trong socket callback
   useEffect(() => { activeConvRef.current = activeConv; }, [activeConv]);
 
   useEffect(() => {
     if (!token) { navigate("/login"); return; }
 
-    // Kết nối socket
     const socket = socketIO(API, {
       transports: ["polling", "websocket"],
       reconnectionAttempts: 5,
@@ -59,24 +69,21 @@ export default function Messages() {
     socket.on("connect", () => socket.emit("join", myId));
     socket.on("connect_error", () => {});
 
-    // Nhận tin nhắn realtime
     socket.on("new_message", (msg) => {
       const currentConv = activeConvRef.current;
       if (currentConv && String(msg.conversationId) === String(currentConv.id)) {
         setMessages(prev => {
-          const isDuplicate = prev.some(m => String(m.id) === String(msg.id));          
-          if (isDuplicate) return prev; 
+          const isDuplicate = prev.some(m => String(m.id) === String(msg.id));
+          if (isDuplicate) return prev;
           return [...prev, msg];
         });
       }
-      // Cập nhật lastMessage trong danh sách hội thoại
       setConversations(prev => prev.map(c =>
         String(c.id) === String(msg.conversationId)
           ? { ...c, lastMessage: msg.content, lastMessageAt: msg.createdAt }
           : c
       ));
     });
-
 
     fetchConversations().then(() => {
       const withUser = searchParams.get("with");
@@ -135,7 +142,7 @@ export default function Messages() {
       setMessages(prev => {
         if (prev.some(m => m.id === res.data.id)) return prev;
         return [...prev, res.data];
-      });      
+      });
       setInput("");
     } catch { toast("Gửi thất bại!", "error"); }
     finally { setSending(false); }
@@ -157,19 +164,8 @@ export default function Messages() {
 
   const other = activeConv ? getOther(activeConv) : null;
 
-  const Avatar = ({ name, role, size = 40 }) => (
-    <div style={{
-      width: size, height: size, borderRadius: "50%", flexShrink: 0,
-      background: role === "landlord" ? "linear-gradient(135deg,#ff6b35,#f7931e)" : "linear-gradient(135deg,#4361ee,#2ec4b6)",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      color: "#fff", fontWeight: 800, fontSize: size * 0.38,
-    }}>
-      {name?.charAt(0)?.toUpperCase() || "?"}
-    </div>
-  );
-
   const filteredConvs = conversations.filter(conv => {
-    if (search.length >= 3) {
+    if (search.length >= 2) {
       const o = getOther(conv);
       const name = o?.name?.toLowerCase() || "";
       const room = conv.room?.title?.toLowerCase() || "";
@@ -179,6 +175,7 @@ export default function Messages() {
   });
 
   const isLandlord = user.role === "landlord" || user.role === "admin";
+
   const chatContent = (
     <>
       <ToastContainer toasts={toasts} />
@@ -189,6 +186,8 @@ export default function Messages() {
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #ddd; border-radius: 4px; }
+        .search-input::placeholder { color: #bbb; }
+        .search-input:focus { border-color: #ff6b35 !important; }
       `}</style>
 
       {/* NAVBAR cho tenant */}
@@ -213,22 +212,45 @@ export default function Messages() {
         </nav>
       )}
 
-      <div style={{ flex: 1, display: "flex", fontFamily: "'Nunito', sans-serif", background: "#f0f2f5", overflow: "hidden", height: isLandlord ? "100%" : "100vh", paddingTop: isLandlord ? 0 : 60 }}>
+      <div style={{
+        flex: 1, display: "flex", fontFamily: "'Nunito', sans-serif",
+        background: "#f0f2f5", overflow: "hidden",
+        height: isLandlord ? "100%" : "100vh",
+        paddingTop: isLandlord ? 0 : 60,
+      }}>
 
         {/* SIDEBAR */}
-        <div style={{ width: 360, background: "#fff", display: "flex", flexDirection: "column", borderRight: "1px solid #e8e8e8", flexShrink: 0 }}>
+        {/* ✅ Fix 4: Responsive sidebar width */}
+        <div style={{
+          width: "clamp(280px, 30%, 360px)",
+          background: "#fff", display: "flex", flexDirection: "column",
+          borderRight: "1px solid #e8e8e8", flexShrink: 0,
+        }}>
           {/* Sidebar Header */}
           <div style={{ padding: "20px 20px 0" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }} onClick={() => navigate("/")}>
                 <img src="/house-icon.png" alt="TrọTốt" style={{ width: 28, height: 28, borderRadius: 8, objectFit: "contain" }} />
                 <span style={{ fontWeight: 900, fontSize: 20, color: "#1a1a1a" }}>Chat</span>
               </div>
-              <div style={{ display: "flex", gap: 4 }}>
-                <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#555", padding: "6px 8px", borderRadius: 8 }}>⋯</button>
-              </div>
+              <button style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#555", padding: "6px 8px", borderRadius: 8 }}>⋯</button>
             </div>
 
+            {/* ✅ Fix 1: Search bar */}
+            <input
+              className="search-input"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="🔍  Tìm kiếm..."
+              style={{
+                width: "100%", padding: "9px 14px",
+                borderRadius: 10, border: "1.5px solid #eee",
+                fontSize: 13, marginBottom: 12,
+                fontFamily: "'Nunito', sans-serif",
+                background: "#f8f7f4", color: "#333",
+                transition: "border-color 0.2s",
+              }}
+            />
           </div>
 
           {/* Conversation list */}
@@ -238,13 +260,17 @@ export default function Messages() {
             ) : filteredConvs.length === 0 ? (
               <div style={{ textAlign: "center", padding: "48px 20px" }}>
                 <div style={{ fontSize: 36, marginBottom: 10 }}>💬</div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: "#aaa" }}>Chưa có tin nhắn nào</div>
-                <div style={{ fontSize: 12, marginTop: 4, color: "#ccc" }}>Nhắn tin từ trang chi tiết phòng</div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: "#aaa" }}>
+                  {search ? "Không tìm thấy kết quả" : "Chưa có tin nhắn nào"}
+                </div>
+                <div style={{ fontSize: 12, marginTop: 4, color: "#ccc" }}>
+                  {search ? "Thử từ khóa khác" : "Nhắn tin từ trang chi tiết phòng"}
+                </div>
               </div>
             ) : filteredConvs.map(conv => {
               const o = getOther(conv);
               const isActive = activeConv?.id === conv.id;
-return (
+              return (
                 <div key={conv.id} onClick={() => selectConversation(conv)} style={{
                   display: "flex", alignItems: "center", gap: 12, padding: "12px 20px",
                   cursor: "pointer", background: isActive ? "#fff7ed" : "transparent",

@@ -34,6 +34,7 @@ exports.getConversations = async (req, res) => {
   }
 };
 
+// 
 exports.createConversation = async (req, res) => {
   try {
     const { userId, roomId } = req.body;
@@ -54,12 +55,21 @@ exports.createConversation = async (req, res) => {
       conversation = await Conversation.create({
         user1Id: myId,
         user2Id: otherId,
-        room_id: roomId || null,
+        roomId: roomId ? Number(roomId) : null,
       });
-      conversation = await Conversation.findByPk(conversation.id, { include: CONV_INCLUDE });
+      conversation = await Conversation.findByPk(conversation.id, {
+        include: CONV_INCLUDE,
+      });
+    } else if (roomId) {
+      // ✅ Cập nhật phòng đang hỏi
+      await conversation.update({ roomId: Number(roomId) });
+      await conversation.reload({ include: CONV_INCLUDE });
     }
 
-    res.json({ ...conversation.toJSON(), participants: buildParticipants(conversation) });
+    res.json({
+      ...conversation.toJSON(),
+      participants: buildParticipants(conversation),
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
